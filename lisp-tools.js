@@ -1,9 +1,11 @@
 /***** Lisp Tools Devel *****/
 
-/* require tools >= 3.1 */
+/* require tools >= 4.4.1 */
 /* require prec-math */
 
-(function (win, udf){
+(function (udf){
+  var nodep = $.nodep;
+  
   ////// Type //////
   
   function typ(a){
@@ -148,7 +150,7 @@
   
   ////// Dynamic vars //////
   
-  var dyn = $.dyn;
+  var sta = $.sta;
   
   ////// Display //////
   
@@ -168,7 +170,7 @@
   
   var dsps = [];
   function dsj(a){
-    return dyn(dsps, a, function (){
+    return sta(dsps, a, function (){
       return dsj2(a);
     });
   }
@@ -222,7 +224,7 @@
       case "uqs": return ",@" + dsj(cadr(a));
       case "not": return "!" + dsj(cadr(a));
     }
-    return "(" + dyn(dlists, a, function (){
+    return "(" + sta(dlists, a, function (){
       return dlis2(a);
     }) + ")";
   }
@@ -1306,7 +1308,7 @@
   
   ////// Object exposure //////
   
-  win.L = {
+  var L = {
     typ: typ,
     tg: tg,
     rp: rp,
@@ -1335,7 +1337,7 @@
     isa: isa,
     inp: inp,
     
-    dyn: dyn,
+    sta: sta,
     
     dsp: dsp,
     dsj: dsj,
@@ -1484,8 +1486,11 @@
     gsn: gsn
   };
   
+  if (nodep)module.exports = L;
+  else window.L = L;
+  
   ////// Testing //////
   
   
   
-})(window);
+})();
