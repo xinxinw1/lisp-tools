@@ -771,7 +771,7 @@
   
   function app(){
     var a = arguments;
-    if ($.len(a) == 0)return "0";
+    if ($.len(a) == 0)return [];
     return $.fold(app2, $.rem(nilp, a));
   }
   
@@ -1493,6 +1493,19 @@
   
   if (nodep)module.exports = L;
   else window.L = L;
+  
+  ////// Speed tests //////
+  
+  function a(){
+    L.pos("7", L.lis("2", "3", "4", "5", "6", "7"));
+  }
+  
+  function b(){
+    $.pos("7", ["2", "3", "4", "5", "6", "7"]);
+  }
+  
+  //al("");
+  //$.spd(a, b, 100);
   
   ////// Testing //////
   
