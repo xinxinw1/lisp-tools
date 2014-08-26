@@ -103,8 +103,12 @@
     return tgp(a) && a[1] === "mac";
   }
   
+  function smacp(a){
+    return tgp(a) && a[1] === "smac";
+  }
+  
   function spcp(a){
-    return tgp(a) && $.inp(a[1], "mac", "spc");
+    return tgp(a) && $.inp(a[1], "mac", "smac", "spc");
   }
   
   function prcp(a){
@@ -1329,6 +1333,7 @@
     arrp: arrp,
     fnp: fnp,
     macp: macp,
+    smacp: smacp,
     spcp: spcp,
     prcp: prcp,
     
