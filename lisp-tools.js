@@ -226,7 +226,10 @@
       case "qq": return "`" + dsj(cadr(a));
       case "uq": return "," + dsj(cadr(a));
       case "uqs": return ",@" + dsj(cadr(a));
+      case "qgs": return "#" + dsj(cadr(a));
+      case "splice": return "@" + dsj(cadr(a));
       case "not": return "!" + dsj(cadr(a));
+      case "nfn": return "(fn (_) " + dsj(cadr(a)) + ")";
     }
     return "(" + sta(dlists, a, function (){
       return dlis2(a);
