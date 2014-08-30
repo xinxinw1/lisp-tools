@@ -1133,6 +1133,11 @@
     return b;
   }
   
+  /*function revlis(a, b){
+    if (nilp(a))return b;
+    return revapp(cdr(a), cons(car(a), b));
+  }*/
+  
   function napp(a, b, o){
     if (udfp(o))o = a;
     if (nilp(a))return o;
@@ -1141,11 +1146,11 @@
     return o;
   }
   
-  function app2(a, b){
+  /*function app2(a, b){
     if (nilp(a))return b;
     if (nilp(b))return a;
     return cons(car(a), app2(cdr(a), b));
-  }
+  }*/
   
   ////// Array //////
   
