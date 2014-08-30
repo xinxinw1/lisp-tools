@@ -658,10 +658,7 @@
   }
   
   function rev(a){
-    if (lisp(a))return (function rev(a, b){
-      if (nilp(a))return b;
-      return rev(cdr(a), cons(car(a), b));
-    })(a, []);
+    if (lisp(a))return revlis(a, []);
     if (arrp(a))return r($.rev(rp(a)));
     if (strp(a))return s($.rev(rp(a)));
     if (synp(a))return $.rev(a);
@@ -1109,10 +1106,45 @@
   
   function nrev(a, l){
     if (udfp(l))l = [];
+    var n; // n = next
+    while (!nilp(a)){
+      n = a[1];
+      a[1] = l;
+      l = a;
+      a = n;
+    }
+    return l;
+  }
+  
+  /*function nrev(a, l){
+    if (udfp(l))l = [];
     if (nilp(a))return l;
     var n = a[1];
     a[1] = l;
     return nrev(n, a);
+  }*/
+  
+  function revlis(a, b){
+    if (udfp(b))b = [];
+    while (!nilp(a)){
+      b = cons(car(a), b);
+      a = cdr(a);
+    }
+    return b;
+  }
+  
+  function napp(a, b, o){
+    if (udfp(o))o = a;
+    if (nilp(a))return o;
+    while (!nilp(a[1]))a = a[1];
+    a[1] = b;
+    return o;
+  }
+  
+  function app2(a, b){
+    if (nilp(a))return b;
+    if (nilp(b))return a;
+    return cons(car(a), app2(cdr(a), b));
   }
   
   ////// Array //////
@@ -1450,6 +1482,7 @@
     nth: nth,
     ncdr: ncdr,
     nrev: nrev,
+    napp: napp,
     
     arr: arr,
     
@@ -1500,15 +1533,23 @@
   ////// Speed tests //////
   
   function a(){
-    L.pos("7", L.lis("2", "3", "4", "5", "6", "7"));
+    var l = [];
+    for (var i = 1; i <= 1000; i++)l = cons(i, l);
+    var l2 = [];
+    for (var i = 1; i <= 1000; i++)l2 = cons(i, l2);
+    app2(l, l2);
   }
   
   function b(){
-    $.pos("7", ["2", "3", "4", "5", "6", "7"]);
+    var l = [];
+    for (var i = 1; i <= 1000; i++)l = cons(i, l);
+    var l2 = [];
+    for (var i = 1; i <= 1000; i++)l2 = cons(i, l2);
+    napp(l, l2);
   }
   
   //al("");
-  //$.spd(a, b, 100);
+  //$.spd(a, b, 1000);
   
   ////// Testing //////
   
