@@ -3,7 +3,7 @@
 /* require tools >= 4.4.1 */
 /* require prec-math */
 
-var calls = {nilp: []};
+//var calls = {smacp: []};
 (function (udf){
   var nodep = $.nodep;
   
@@ -35,9 +35,10 @@ var calls = {nilp: []};
     return $.app([tgsym, x], $.sli(as, 1));
   }
   
+  // n is probably never going to be greater than js int size
   function rp(a, n){
-    if (n === udf)n = "0";
-    if (tgp(a))return chku(a[add(n, "2")]);
+    if (n === udf)n = 0;
+    if (tgp(a))return chku(a[$.num(n)+2]);
     return a;
   }
   
@@ -52,16 +53,26 @@ var calls = {nilp: []};
   //// Predicates ////
   
   function nilp(a){
-    calls.nilp.push(arguments.callee.caller);
-    return $.arrp(a) && a.length == 0;
+    //calls.nilp.push(arguments.callee.caller);
+    return $.arrp(a) && a.length === 0;
   }
   
+  // tags must have >= 3 items
+  // return $.arrp(a) && a.length === 2 || a.length === 0
   function lisp(a){
     return $.arrp(a) && a[0] !== tgsym;
   }
   
+  // !lisp(a) || nilp(a)
   function atmp(a){
-    return !lisp(a) || a.length == 0;
+    //calls.atmp.push(arguments.callee.caller);
+    return !$.arrp(a) || a.length !== 2;
+  }
+  
+  // lisp(a) && !nilp(a)
+  // also !atmp(a)
+  function consp(a){
+    return $.arrp(a) && a.length === 2;
   }
   
   // includes nump
@@ -120,21 +131,56 @@ var calls = {nilp: []};
   ////// Comparison //////
   
   function is(a, b){
+    if (a === b)return true;
+    if ($.arrp(a)){
+      if (!$.arrp(b))return false; // must match type
+      if (a.length === 0)return b.length === 0; // nilp
+      // if they are non nil arrays, they must be equal strings
+      return a[0] === tgsym && b[0] === tgsym &&
+             a[1] === "str" && b[1] === "str" &&
+             a[2] === b[2];
+    }
+    return rgxp(a) && rgxp(b) && $.iso(a, b);
+  }
+  
+  /*function is2(a, b){
     if (a === b || nilp(a) && nilp(b))return true;
     if (strp(a) && strp(b))return rp(a) === rp(b);
     if (rgxp(a) && rgxp(b))return $.iso(a, b);
     return false;
-  }
+  }*/
   
   function iso(a, b){
-    if (lisp(a) && lisp(b))return (function iso(a, b){
-      if (is(a, b))return true;
-      if (atmp(a) || atmp(b))return is(a, b);
-      return iso(car(a), car(b)) && iso(cdr(a), cdr(b));
-    })(a, b);
+    if (lisp(a) && lisp(b))return isolis(a, b);
     if (arrp(a) && arrp(b))return $.iso(rp(a), rp(b));
     return is(a, b);
   }
+  
+  /*function iso(a, b){
+    if ($.arrp(a)){
+      if (!$.arrp(b))return false;
+      if (a[0] === tgsym){
+        return b[0] === tgsym &&
+               a[1] === "arr" && b[1] === "arr" &&
+               $.iso(a[2], b[2]);
+      }
+      return b[0] !== tgsym && isolis(a, b);
+    }
+    return is(a, b);
+  }*/
+  
+  function isolis(a, b){
+    if (is(a, b))return true;
+    // orig: return is(a, b); at this point, we know that is false
+    if (atmp(a) || atmp(b))return false;
+    return isolis(car(a), car(b)) && isolis(cdr(a), cdr(b));
+  }
+  
+  /*function isolis(a, b){
+    if (is(a, b))return true;
+    if (atmp(a) || atmp(b))return is(a, b);
+    return isolis(car(a), car(b)) && isolis(cdr(a), cdr(b));
+  }*/
   
   function isa(x, a){
     var t = typ(a);
@@ -368,11 +414,20 @@ var calls = {nilp: []};
   }
   
   function prop(a){
+    if (synp(a))return a;
+    if ($.arrp(a)){
+      if (a.length === 0)return "";
+      if (a[0] === tgsym && a[1] === "str")return a[2]; // rp(a)
+    }
+    err(prop, "Invalid obj prop name a = $1", a);
+  }
+  
+  /*function prop(a){
     if (nilp(a))return "";
     if (synp(a))return a;
     if (strp(a))return rp(a);
     err(prop, "Invalid obj prop name a = $1", a);
-  }
+  }*/
   
   function jstr(a){
     if (nilp(a))return "";
@@ -381,12 +436,29 @@ var calls = {nilp: []};
     err(jstr, "Can't coerce a = $1 to jstr", a);
   }
   
-  function jarr(a){
+  /*function jarr(a){
     if (arrp(a))return rp(a);
     if (lisp(a))return foldlis(function (r, x){
       r.push(x);
       return r;
     }, [], a);
+    err(jarr, "Can't coerce a = $1 to jarr", a);
+  }*/
+  
+  function jarr(a){
+    if ($.arrp(a)){
+      if (a.length === 0)return [];
+      if (a.length === 2){
+        var o = a;
+        var r = [];
+        while (consp(o)){
+          r.push(o[0]);
+          o = o[1];
+        }
+        return r;
+      }
+      if (a[0] === tgsym && a[1] === "arr")return a[2]; // rp(a)
+    }
     err(jarr, "Can't coerce a = $1 to jarr", a);
   }
   
@@ -479,9 +551,19 @@ var calls = {nilp: []};
   }
   
   function maplis(f, a){
+    var r = [];
+    // orig: !nilp(a)
+    while (consp(a)){
+      r = [f(a[0]), r];
+      a = a[1];
+    }
+    return nrev(r);
+  }
+  
+  /*function maplis(f, a){
     if (nilp(a))return [];
     return cons(f(car(a)), maplis(f, cdr(a)));
-  }
+  }*/
   
   // maplis(f, a)
   
@@ -511,16 +593,18 @@ var calls = {nilp: []};
   }
   
   function has(x, a){
-    if (lisp(a))return (function has(x, a){
-      if (nilp(a))return false;
-      if (x(car(a)))return true;
-      return has(x, cdr(a));
-    })(jbn(x), a);
+    if (lisp(a))return haslis(jbn(x), a);
     if (arrp(a))return $.has(jbn(x), rp(a));
     if (objp(a))return $.has(jbn(x), a);
     if (synp(a))return $.has(jmat(x), a);
     if (strp(a))return has(x, rp(a));
     err(has, "Can't find if a = $1 has x = $2", a, x);
+  }
+  
+  function haslis(x, a){
+    if (nilp(a))return false;
+    if (x(car(a)))return true;
+    return haslis(x, cdr(a));
   }
   
   function all(x, a){
@@ -625,15 +709,28 @@ var calls = {nilp: []};
   //// Whole ////
   
   function len(a){
-    if (lisp(a))return (function len(a){
-      if (nilp(a))return "0";
-      return add(len(cdr(a)), "1");
-    })(a);
+    if (lisp(a))return lenlis(a);
     if (synp(a) || objp(a))return $.str($.len(a));
     if (arrp(a))return $.str($.len(rp(a)));
     if (strp(a))return len(rp(a));
     err(len, "Can't get len of a = $1", a);
   }
+  
+  // apparently the largest len ever seen when running compile-basic is 2
+  // probably shouldn't worry about this getting too big
+  function lenlis(a){
+    var r = 0;
+    while (consp(a)){
+      r += 1;
+      a = a[1];
+    }
+    return $.str(r);
+  }
+  
+  /*function lenlis2(a){
+    if (nilp(a))return "0";
+    return add(lenlis2(cdr(a)), "1");
+  }*/
   
   function emp(a){
     if (lisp(a))return nilp(a);
@@ -678,7 +775,7 @@ var calls = {nilp: []};
   }
   
   function fstn(n, a){
-    if (lisp(a))fstnlis(n, a);
+    if (lisp(a))return fstnlis(n, a);
     return sli(a, "0", n);
     err(fstn, "Can't get fst n = $1 of a = $2", n, a);
   }
@@ -716,17 +813,21 @@ var calls = {nilp: []};
   
   function grp(a, n){
     if (!is(n, "0")){
-      if (lisp(a))return (function grp(a, n){
-        if (nilp(a))return [];
-        return cons(fstn(n, a), grp(ncdr(n, a), n));
-      })(a, n);
-      if (synp(a) || strp(a))return (function grp(a, n){
-        if (emp(a))return [];
-        return cons(fstn(n, a), grp(rstn(n, a), n));
-      })(a, n);
+      if (lisp(a))return grplis(a, n);
+      if (synp(a) || strp(a))return grpstr(a, n);
       if (arrp(a))return r($.map(r, $.grp(rp(a), $.num(n))));
     }
     err(grp, "Can't grp a = $1 into grps of n = $2", a, n);
+  }
+  
+  function grplis(a, n){
+    if (nilp(a))return [];
+    return cons(fstn(n, a), grp(ncdr(n, a), n));
+  }
+  
+  function grpstr(a, n){
+    if (emp(a))return [];
+    return cons(fstn(n, a), grp(rstn(n, a), n));
   }
   
   function par(a, b){
@@ -837,9 +938,10 @@ var calls = {nilp: []};
   }
   
   function foldlis(f, x, a){
-    while (!nilp(a)){
-      x = f(x, car(a));
-      a = cdr(a);
+    // orig: !nilp(a), curr: !atmp(a) || tgp(a)
+    while (consp(a)){
+      x = f(x, a[0]);
+      a = a[1];
     }
     return x;
   }
@@ -1124,7 +1226,8 @@ var calls = {nilp: []};
   function nrev(a, l){
     if (udfp(l))l = [];
     var n; // n = next
-    while (!nilp(a)){
+    // orig: !nilp(a)
+    while (consp(a)){
       n = a[1];
       a[1] = l;
       l = a;
@@ -1143,7 +1246,8 @@ var calls = {nilp: []};
   
   function revlis(a, b){
     if (udfp(b))b = [];
-    while (!nilp(a)){
+    // orig: !nilp(a)
+    while (consp(a)){
       b = cons(car(a), b);
       a = cdr(a);
     }
@@ -1158,7 +1262,8 @@ var calls = {nilp: []};
   function napp(a, b, o){
     if (udfp(o))o = a;
     if (nilp(a))return o;
-    while (!nilp(a[1]))a = a[1];
+    // orig: !nilp(a[1])
+    while (consp(a[1]))a = a[1];
     a[1] = b;
     return o;
   }
@@ -1190,7 +1295,7 @@ var calls = {nilp: []};
   }
   
   function stf(a){
-    if (len(arguments) == 0)return s("");
+    if ($.len(arguments) == 0)return s("");
     if (strp(a) || synp(a))return foldi(function (s, x, i){
       return rpl("$" + i, dsp(x), s);
     }, r(arguments));
@@ -1208,6 +1313,7 @@ var calls = {nilp: []};
   }
   
   function add(){
+    //calls.add.push(arguments.callee.caller);
     var a = arguments;
     if (a.length == 0)return "0";
     return foldarr(R.add, a);
@@ -1379,6 +1485,7 @@ var calls = {nilp: []};
     nilp: nilp,
     lisp: lisp,
     atmp: atmp,
+    consp: consp,
     synp: synp,
     symp: symp,
     nump: nump,
@@ -1547,7 +1654,8 @@ var calls = {nilp: []};
     dol: dol,
     do1: do1,
     gs: gs,
-    gsn: gsn
+    gsn: gsn,
+    tgsym: tgsym
   };
   
   if (nodep)module.exports = L;
