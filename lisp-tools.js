@@ -3,6 +3,7 @@
 /* require tools >= 4.4.1 */
 /* require prec-math */
 
+var calls = {nilp: []};
 (function (udf){
   var nodep = $.nodep;
   
@@ -35,7 +36,7 @@
   }
   
   function rp(a, n){
-    if (udfp(n))n = "0";
+    if (n === udf)n = "0";
     if (tgp(a))return chku(a[add(n, "2")]);
     return a;
   }
@@ -51,6 +52,7 @@
   //// Predicates ////
   
   function nilp(a){
+    calls.nilp.push(arguments.callee.caller);
     return $.arrp(a) && a.length == 0;
   }
   
@@ -463,23 +465,22 @@
   }
   
   function map(f, a){
-    if (lisp(a))return (function map(f, a){
-      if (nilp(a))return [];
-      return cons(f(car(a)), map(f, cdr(a)));
-    })(jn(f), a);
+    if (lisp(a))return maplis(jn(f), a);
     if (arrp(a))return r($.map(jn(f), rp(a)));
     if (objp(a))return $.map(jn(f), a);
     err(map, "Can't map f = $1 over a = $2", f, a);
   }
   
   function mapn(f, a){
-    if (lisp(a))return (function map(f, a){
-      if (nilp(a))return [];
-      return cons(f(car(a)), map(f, cdr(a)));
-    })(f, a);
+    if (lisp(a))return maplis(f, a);
     if (arrp(a))return r($.map(f, rp(a)));
     if (objp(a))return $.map(f, a);
     err(map, "Can't map f = $1 over a = $2", f, a);
+  }
+  
+  function maplis(f, a){
+    if (nilp(a))return [];
+    return cons(f(car(a)), maplis(f, cdr(a)));
   }
   
   // maplis(f, a)
@@ -677,12 +678,14 @@
   }
   
   function fstn(n, a){
-    if (lisp(a))return (function fstn(n, a){
-      if (le(n, "0") || nilp(a))return [];
-      return cons(car(a), fstn(sub(n, "1"), cdr(a)));
-    })(n, a);
+    if (lisp(a))fstnlis(n, a);
     return sli(a, "0", n);
     err(fstn, "Can't get fst n = $1 of a = $2", n, a);
+  }
+  
+  function fstnlis(n, a){
+    if (le(n, "0") || nilp(a))return [];
+    return cons(car(a), fstnlis(sub(n, "1"), cdr(a)));
   }
   
   function rstn(n, a){
@@ -828,9 +831,17 @@
     err(fold, "Can't fold a = $1 with f = $2", a, f);
   }
   
-  function foldlis(f, x, a){
+  function foldlis2(f, x, a){
     if (nilp(a))return x;
-    return foldlis(f, f(x, car(a)), cdr(a));
+    return foldlis2(f, f(x, car(a)), cdr(a));
+  }
+  
+  function foldlis(f, x, a){
+    while (!nilp(a)){
+      x = f(x, car(a));
+      a = cdr(a);
+    }
+    return x;
   }
   
   function foldi(f, x, a){
@@ -1039,9 +1050,6 @@
   ////// List //////
   
   function car(a){
-    if (a === udf){
-      alert("here");
-    }
     return (a[0] !== udf)?a[0]:[];
   }
   
@@ -1083,10 +1091,19 @@
   
   //// General ////
   
-  // can't use fold because it's backwards
   function lis(){
-    return $.foldr(cons, [], arguments);
+    var a = arguments;
+    var r = [];
+    for (var i = a.length-1; i >= 0; i--){
+      r = cons(a[i], r);
+    }
+    return r;
   }
+  
+  // can't use fold because it's backwards
+  /*function lis2(){
+    return $.foldr(cons, [], arguments);
+  }*/
   
   function lisd(){
     return $.foldr(cons, arguments);
@@ -1301,7 +1318,7 @@
   ////// Checkers //////
   
   function chku(a){
-    return udfp(a)?[]:a;
+    return (a === udf)?[]:a;
   }
   
   function chkb(a){
@@ -1487,6 +1504,7 @@
     nth: nth,
     ncdr: ncdr,
     nrev: nrev,
+    revlis: revlis,
     napp: napp,
     
     arr: arr,
