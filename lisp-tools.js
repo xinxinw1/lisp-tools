@@ -10,195 +10,145 @@
   ////// Type //////
   
   function typ(a){
-    if ($.arrp(a)){
-      if (a.length == 0)return "nil";
-      if (a[0] === tgsym)return a[1];
-      return "lis";
-    }
-    if ($.strp(a)){
-      if ($.has(/^-?[0-9]+(\.[0-9]+)?$/, a))return "num";
-      return "sym";
-    }
-    if ($.objp(a))return "obj";
-    if ($.rgxp(a))return "rgx";
-    if ($.fnp(a))return "jn";
-    err(typ, "Unknown type of a = $1", a);
+    return a.type;
   }
   
-  // tagsym defined later
-  function tg(x, a){
-    var as = arguments;
-    if (as.length == 2){
-      if (isa(x, a))return a;
-      return [tgsym, x, a];
-    }
-    return $.app([tgsym, x], $.sli(as, 1));
+  function mk(t, o){
+    return $.app({type: t}, o);
+  }
+  
+  function mkdat(t, d){
+    return {type: t, data: d};
   }
   
   // n is probably never going to be greater than js int size
-  function rp(a, n){
-    if (n === udf)n = 0;
-    if (tgp(a))return chku(a[$.num(n)+2]);
-    return a;
+  function rep(a, x){
+    return a[x];
   }
   
-  function r(a){
-    return tg("arr", a);
+  function tag(a, x, y){
+    return a[x] = y;
   }
   
-  function s(a){
-    return tg("str", a);
+  function det(a, x){
+    var r = a[x];
+    delete a[x];
+    return r;
+  }
+  
+  function dat(a){
+    return a.data;
+  }
+  
+  function mkbui(t){
+    return function (a){
+      return mkdat(t, a);
+    };
+  }
+  
+  var sy = mkbui("sym");
+  var nu = mkbui("num");
+  var st = mkbui("str");
+  var ar = mkbui("arr");
+  var ob = mkbui("obj");
+  var rx = mkbui("rgx");
+  var jn = mkbui("jn");
+  var ma = mkbui("mac");
+  var sm = mkbui("smac");
+  
+  function isa(t, a){
+    return typ(a) === t;
   }
   
   //// Predicates ////
   
-  function nilp(a){
-    //calls.nilp.push(arguments.callee.caller);
-    return $.arrp(a) && a.length === 0;
-  }
-  
-  // tags must have >= 3 items
-  // return $.arrp(a) && a.length === 2 || a.length === 0
-  function lisp(a){
-    return $.arrp(a) && a[0] !== tgsym;
-  }
-  
-  // !lisp(a) || nilp(a)
-  function atmp(a){
-    //calls.atmp.push(arguments.callee.caller);
-    return !$.arrp(a) || a.length !== 2;
-  }
-  
-  // lisp(a) && !nilp(a)
-  // also !atmp(a)
-  function consp(a){
-    return $.arrp(a) && a.length === 2;
-  }
-  
-  // includes nump
-  var synp = $.strp;
-  
-  function symp(a){
-    return synp(a) && !/^-?[0-9]+(\.[0-9]+)?$/.test(a);
-  }
-  
-  /*function nump(a){
-    return $.strp(a) && $.has(/^-?[0-9]+(\.[0-9]+)?$/, a);
-  }*/
-  
-  function nump(a){
-    return synp(a) && /^-?[0-9]+(\.[0-9]+)?$/.test(a);
-  }
-  
-  var objp = $.objp;
-  var rgxp = $.rgxp;
   var udfp = $.udfp;
   
-  function tgp(a){
-    return $.arrp(a) && a[0] === tgsym;
+  function tagp(a){
+    return a.type === udf;
   }
   
-  function strp(a){
-    return tgp(a) && a[1] === "str";
+  function mkpre(t){
+    return function (a){
+      return isa(t, a);
+    };
   }
   
-  function arrp(a){
-    return tgp(a) && a[1] === "arr";
+  var symp = mkpre("sym");
+  var nump = mkpre("num");
+  var strp = mkpre("str");
+  var consp = mkpre("cons");
+  var arrp = mkpre("arr");
+  var objp = mkpre("obj");
+  var rgxp = mkpre("rgx");
+  var jnp = mkpre("jn");
+  var macp = mkpre("mac");
+  var smacp = mkpre("smac");
+  
+  function nilp(a){
+    return symp(a) && dat(a) === "nil";
   }
   
-  var jnp = $.fnp;
+  function lisp(a){
+    return consp(a) || nilp(a);
+  }
+  
+  function atmp(a){
+    return !consp(a);
+  }
+  
+  function synp(a){
+    return symp(a) || nump(a) || strp(a);
+  }
   
   function fnp(a){
-    return jnp(a) || tgp(a) && $.inp(a[1], "fn", "nfn", "jn2");
+    return $.inp(typ(a), "fn", "nfn", "jn", "jn2");
   }
   
-  function macp(a){
-    return tgp(a) && a[1] === "mac";
-  }
-  
-  function smacp(a){
-    return tgp(a) && a[1] === "smac";
-  }
-  
-  function spcp(a){
-    return tgp(a) && $.inp(a[1], "mac", "smac", "spc");
+  function specp(a){
+    return $.inp(typ(a), "mac", "smac", "spec");
   }
   
   function prcp(a){
-    return fnp(a) || spcp(a);
+    return fnp(a) || specp(a);
   }
   
   ////// Comparison //////
   
   function is(a, b){
-    if (a === b)return true;
-    if ($.arrp(a)){
-      if (!$.arrp(b))return false; // must match type
-      if (a.length === 0)return b.length === 0; // nilp
-      // if they are non nil arrays, they must be equal strings
-      return a[0] === tgsym && b[0] === tgsym &&
-             a[1] === "str" && b[1] === "str" &&
-             a[2] === b[2];
+    if (typ(a) !== typ(b))return false;
+    switch (typ(a)){
+      case "num":
+      case "sym":
+      case "str": return dat(a) === dat(b);
+      case "rgx": return $.iso(a, b);
     }
-    return rgxp(a) && rgxp(b) && $.iso(a, b);
+    return a === b;
   }
-  
-  /*function is2(a, b){
-    if (a === b || nilp(a) && nilp(b))return true;
-    if (strp(a) && strp(b))return rp(a) === rp(b);
-    if (rgxp(a) && rgxp(b))return $.iso(a, b);
-    return false;
-  }*/
   
   function iso(a, b){
-    if (lisp(a) && lisp(b))return isolis(a, b);
-    if (arrp(a) && arrp(b))return $.iso(rp(a), rp(b));
-    return is(a, b);
-  }
-  
-  /*function iso(a, b){
-    if ($.arrp(a)){
-      if (!$.arrp(b))return false;
-      if (a[0] === tgsym){
-        return b[0] === tgsym &&
-               a[1] === "arr" && b[1] === "arr" &&
-               $.iso(a[2], b[2]);
-      }
-      return b[0] !== tgsym && isolis(a, b);
+    if (typ(a) !== typ(b))return false;
+    switch (typ(a)){
+      case "cons": return isolis(a, b);
+      case "arr": 
+      case "obj": return $.iso(dat(a), dat(b));
     }
     return is(a, b);
-  }*/
+  }
   
   function isolis(a, b){
     if (is(a, b))return true;
-    // orig: return is(a, b); at this point, we know that is false
     if (atmp(a) || atmp(b))return false;
     return isolis(car(a), car(b)) && isolis(cdr(a), cdr(b));
   }
   
-  /*function isolis(a, b){
-    if (is(a, b))return true;
-    if (atmp(a) || atmp(b))return is(a, b);
-    return isolis(car(a), car(b)) && isolis(cdr(a), cdr(b));
-  }*/
-  
-  function isa(x, a){
-    var t = typ(a);
-    if (is(x, t))return true;
-    if (inp(x, "num", "sym") && inp(t, "num", "sym"))return true;
-    if (is(x, "sym") && is(t, "nil"))return true;
-    if (is(x, "fn") && inp(t, "jn", "jn2"))return true;
-    if (is(x, "spc") && is(t, "mac"))return true;
-    return false;
-  }
-  
-  function inp(x){
+  /*function inp(x){
     var a = arguments;
     for (var i = 1; i < a.length; i++){
       if (is(a[i], x))return true;
     }
     return false;
-  }
+  }*/
   
   ////// Dynamic vars //////
   
@@ -228,35 +178,21 @@
   }
   
   function dsj2(a){
-    if (nilp(a))return "nil";
-    if (lisp(a))return dlis(a);
-    if (synp(a))return dsym(a);
-    if (objp(a)){
-      if (has(a, cdr(dsps)))return "{...}";
-      return "{" + foldi(function (s, x, i){
-        if (s == "")return dsj(i) + " " + dsj(x);
-        return s + " " + dsj(i) + " " + dsj(x);
-      }, "", a) + "}";
+    if (!tagp(a))return $.stf("<js $1>", a);
+    switch (typ(a)){
+      case "num": 
+      case "sym": return dsym(a);
+      case "cons": return dlis(a);
+      case "obj": return dobj(a);
+      case "rgx": return "#\"" + $.rpl("\"", "\\\"", dat(a).source) + "\"";
+      case "str": return $.dsp(dat(a));
+      case "arr": return darr(a);
+      case "fn": return dfn(a);
+      case "nfn": return dnfn(a);
     }
-    if (rgxp(a))return "#\"" + $.rpl("\"", "\\\"", a.source) + "\"";
-    if (strp(a))return $.dsp(rp(a));
-    if (arrp(a)){
-      if (has(a, cdr(dsps)))return "#[...]";
-      return "#[" + fold(function (s, x){
-        if (s == "")return dsj(x);
-        return s + " " + dsj(x);
-      }, "", a) + "]";
-    }
-    if (fnp(a)){
-      switch (typ(a)){
-        /*case "fn": return "<fn " + dsj(rp(a, "0")) + " "
-                                 + dsj(rp(a, "1")) + ">";*/
-        case "fn": return "<fn " + dsj(rp(a, "0")) + ">";
-        case "nfn": return "<nfn " + dsj(rp(a, "0")) + ">";
-      }
-    }
-    if (tgp(a))return "<" + $.joi($.map(dsj, $.sli(a, 1)), " ") + ">";
-    return $.dsp(a);
+    var o = cpy(a);
+    tag(o, "type", "obj");
+    return "<" + typ(a) + " " + dobj(o) + ">";
   }
   
   function dsym(a){
@@ -292,13 +228,42 @@
     return dsj(car(a)) + " " + dlis2(cdr(a));
   }
   
+  function dobj(a){
+    if (has(a, cdr(dsps)))return "{...}";
+    return "{" + foldi(function (s, x, i){
+      if (s == "")return dsj(i) + " " + dsj(x);
+      return s + " " + dsj(i) + " " + dsj(x);
+    }, "", a) + "}";
+  }
+  
+  function darr(a){
+    if (has(a, cdr(dsps)))return "#[...]";
+    return "#[" + fold(function (s, x){
+      if (s == "")return dsj(x);
+      return s + " " + dsj(x);
+    }, "", a) + "]";
+  }
+  
+  function dfn(a){
+    /*return "<fn " + dsj(rep(a, "ag")) + " "
+                    + dsj(rep(a, "bd")) + ">";*/
+    return "<fn " + dsj(rep(a, "ag")) + ">";
+  }
+  
+  function dnfn(a){
+    return "<nfn " + dsj(rep(a, "bd")) + ">";
+  }
+  
   ////// Output //////
   
-  var of = function (a){return [];}
+  var of = function (a){return nil();}
   
   function ofn(f){
-    if (udfp(f))return of;
     return of = f;
+  }
+  
+  function gofn(){
+    return of;
   }
   
   function ou(a){
@@ -306,42 +271,41 @@
   }
   
   function out(a){
-    return of(app(a, s("\n")));
+    return of(app(a, st("\n")));
   }
   
   function alr(a){
-    $.alr(rp(a));
-    return [];
+    $.alr(dat(a));
+    return nil();
   }
   
   function pr(){
-    return ou(apl(stf, r(arguments)));
+    return ou(apl(stf, ar(arguments)));
   }
   
   function prn(a){
-    return out(apl(stf, r(arguments)));
+    return out(apl(stf, ar(arguments)));
   }
   
   function al(a){
-    return alr(apl(stf, r(arguments)));
+    return alr(apl(stf, ar(arguments)));
   }
   
   ////// Converters //////
   
   function sym(a){
-    if (synp(a))return a;
-    if (strp(a))return rp(a);
+    if (synp(a))return sy(dat(a));
     return dsj(a);
   }
   
   function str(){
-    return joi(r(arguments));
+    return joi(ar(arguments));
   }
   
   function str1(a){
     if (strp(a))return a;
     if (nilp(a))return s("");
-    if (synp(a))return s(a);
+    if (synp(a))return s(dat(a));
     return dsp(a);
   }
   
@@ -351,7 +315,6 @@
       var s = $.mtc(/^-?[0-9]+(\.[0-9]+)?/, a);
       return (s == -1)?"0":s;
     }
-    if (strp(a))return num(rp(a));
     return "0";
   }
   
@@ -364,16 +327,15 @@
   
   function tarr(a){
     if (arrp(a))return a;
-    if (lisp(a))return r(jarr(a));
-    if (synp(a))return r($.tarr(a));
-    if (strp(a))return map(s, tarr(rp(a)));
+    if (lisp(a))return ar(jarr(a));
+    if (synp(a))return map(mkbui(typ(a)), ar($.tarr(dat(a))));
     err(tarr, "Can't coerce a = $1 to arr", a);
   }
   
   function tlis(a){
     if (lisp(a))return a;
-    if (arrp(a))return $.apl(lis, rp(a));
-    if (synp(a) || strp(a))return tlis(tarr(a));
+    if (arrp(a))return $.apl(lis, dat(a));
+    if (synp(a))return tlis(tarr(a));
     if (objp(a))return $.foldi(function (l, x, i){
       return cons(cons(i, x), l);
     }, [], a);
@@ -403,36 +365,22 @@
       if (atmp(x))err(tobj, "Can't coerce a = $1 to obj", a);
       o[prop(car(x))] = cdr(x);
       return o;
-    }, {}, a);
+    }, ob({}), a);
     if (arrp(a))return $.tobj($.map(function (x){
       if (!$.arrp(x))err(tobj, "Can't coerce a = $1 to obj", a);
       return [jstr(x[0]), x[1]];
-    }, $.map(jarr, rp(a))), {});
-    if (synp(a))return $.tobj(a);
-    if (strp(a))return map(s, tobj(rp(a)));
+    }, $.map(jarr, dat(a))), ob({}));
+    if (synp(a))return map(mkbui(typ(a)), $.tobj(dat(a)));
     err(tobj, "Can't coerce a = $1 to obj", a);
   }
   
   function prop(a){
-    if (synp(a))return a;
-    if ($.arrp(a)){
-      if (a.length === 0)return "";
-      if (a[0] === tgsym && a[1] === "str")return a[2]; // rp(a)
-    }
+    if (synp(a))return dat(a);
     err(prop, "Invalid obj prop name a = $1", a);
   }
   
-  /*function prop(a){
-    if (nilp(a))return "";
-    if (synp(a))return a;
-    if (strp(a))return rp(a);
-    err(prop, "Invalid obj prop name a = $1", a);
-  }*/
-  
   function jstr(a){
-    if (nilp(a))return "";
-    if (synp(a))return a;
-    if (strp(a))return rp(a);
+    if (synp(a))return dat(a);
     err(jstr, "Can't coerce a = $1 to jstr", a);
   }
   
@@ -446,26 +394,22 @@
   }*/
   
   function jarr(a){
-    if ($.arrp(a)){
-      if (a.length === 0)return [];
-      if (a.length === 2){
-        var o = a;
-        var r = [];
-        while (consp(o)){
-          r.push(o[0]);
-          o = o[1];
-        }
-        return r;
+    if (arrp(a))return dat(a);
+    if (consp(a)){
+      var o = a;
+      var r = [];
+      while (consp(o)){
+        r.push(car(o));
+        o = cdr(o);
       }
-      if (a[0] === tgsym && a[1] === "arr")return a[2]; // rp(a)
+      return r;
     }
     err(jarr, "Can't coerce a = $1 to jarr", a);
   }
   
   function jmat(a){
     if (nilp(a))return "";
-    if (synp(a) || rgxp(a))return a;
-    if (strp(a))return rp(a);
+    if (synp(a) || rgxp(a))return dat(a);
     if (fnp(a))return jbn(a);
     if (lisp(a) || arrp(a))return jarr(map(jmat, a));
     err(jmat, "Can't coerce a = $1 to jmat", a);
@@ -491,8 +435,6 @@
     };
   }
   
-  ////// Add //////
-  
   ////// Sequence //////
   
   //// Items ////
@@ -503,10 +445,9 @@
   
   function ref1(a, n){
     if (lisp(a))return nth(n, a);
-    if (synp(a))return chku($.ref(a, $.num(n)));
-    if (strp(a))return s(ref1(rp(a), n));
-    if (arrp(a))return chku($.ref(rp(a), $.num(n)));
-    if (objp(a))return chku($.ref(a, n));
+    if (synp(a))return mkbui(typ(a))(chku($.ref(dat(a), $.num(n))));
+    if (arrp(a))return chku($.ref(dat(a), $.num(n)));
+    if (objp(a))return chku($.ref(dat(a), n));
     err(ref, "Can't get item n = $1 of a = $2", n, a);
   }
   
