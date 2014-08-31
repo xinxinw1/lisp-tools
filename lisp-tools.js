@@ -1663,24 +1663,23 @@
   
   ////// Speed tests //////
   
+  var o = {type: "jn", data: function (a){ return a; }};
+  var l = function (a){ return a; };
+  
+  function typ2(a){
+    return a.type;
+  }
+  
   function a(){
-    var l = [];
-    for (var i = 1; i <= 1000; i++)l = cons(i, l);
-    var l2 = [];
-    for (var i = 1; i <= 1000; i++)l2 = cons(i, l2);
-    app2(l, l2);
+    typ2(o)
   }
   
   function b(){
-    var l = [];
-    for (var i = 1; i <= 1000; i++)l = cons(i, l);
-    var l2 = [];
-    for (var i = 1; i <= 1000; i++)l2 = cons(i, l2);
-    napp(l, l2);
+    typ(l)
   }
   
   //al("");
-  //$.spd(a, b, 1000);
+  //$.spd(a, b, 10000000);
   
   ////// Testing //////
   
