@@ -1027,23 +1027,34 @@
   
   function mid(a){
     return sli(a, "1", sub(len(a), "1"));
-  }
+  }*/
   
   //// Group ////
   
   function spl(a, x){
-    if (synp(a))return tlis(r($.spl(a, jmat(x))));
-    if (strp(a))return map(s, spl(rp(a), x));
-    if (lisp(a))return (function spl(a, x, c){
-      if (udfp(c))c = [];
-      if (is(car(a), x))return cons(nrev(c), spl(cdr(a), x));
-      return spl(cdr(a), x, cons(car(a), c));
-    })(a, x);
-    if (arrp(a))return r($.spl(rp(a), x));
+    var t = typ(a);
+    switch (t){
+      case "sym": if (dat(a) === "nil")return lis(nil());
+      case "str": 
+      case "num":
+        if (udfp(x))x = L.st("");
+        return tlis(ar($.map(mkbui(t), $.spl(dat(a), jmat(x)))));
+      case "cons":
+        if (udfp(x))return grp(a, L.nu("1"));
+        return (function spl(a, x, c){
+          if (udfp(c))c = nil();
+          if (nilp(a))return cons(nrev(c), nil());
+          if (x(car(a)))return cons(nrev(c), spl(cdr(a), x));
+          return spl(cdr(a), x, cons(car(a), c));
+        })(a, jbn(x));
+      case "arr":
+        if (udfp(x))return grp(a, L.nu("1"));
+        return ar($.map(ar, $.spl(dat(a), jbn(x))));
+    }
     err(spl, "Can't split a = $1 by x = $2", a, x);
   }
   
-  function grp(a, n){
+  /*function grp(a, n){
     if (!is(n, "0")){
       if (lisp(a))return grplis(a, n);
       if (synp(a) || strp(a))return grpstr(a, n);
@@ -1816,6 +1827,8 @@
     cpy: cpy,
     rev: rev,
     revlis: revlis,
+    
+    spl: spl,
     
     joi: joi,
     app: app,
