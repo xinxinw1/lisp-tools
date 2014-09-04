@@ -369,9 +369,13 @@
       case "cons": return dlis(a);
       case "arr": return darr(a);
       case "obj": return dobj(a);
-      case "rgx": return "/" + dat(a).source + "/";
+      case "rgx": return "#\"" + $.rpl("\"", "\\\"", dat(a).source) + "\"";
       case "jn": return "<jn " + $.dsp(dat(a)) + ">";
+      case "jn2": return "<jn2 " + dsj(rep(a, "ag")) + " "
+                                 + $.dsp(rep(a, "fn")) + ">";
       case "fn": return dfn(a);
+      case "mac": return dmac(a);
+      case "spec": return "<spec " + dat(a) + ">";
     }
     var o = cpy(a);
     det(o, "type");
@@ -428,9 +432,15 @@
   }
   
   function dfn(a){
-    /*return "<fn " + dsj(rep(a, "ag")) + " "
-                    + dsj(rep(a, "bd")) + ">";*/
+    var nm = rep(a, "nm");
+    if (!nilp(nm))return "<fn " + nm + " " + dsj(rep(a, "ag")) + ">";
     return "<fn " + dsj(rep(a, "ag")) + ">";
+  }
+  
+  function dmac(a){
+    var nm = rep(a, "nm");
+    if (!nilp(nm))return "<mac " + nm + " " + dsj(rep(dat(a), "ag")) + ">";
+    return "<mac " + dsj(rep(dat(a), "ag")) + ">";
   }
   
   ////// Output //////
