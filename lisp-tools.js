@@ -969,14 +969,17 @@
     return add(lenlis2(cdr(a)), "1");
   }*/
   
-  /*function emp(a){
-    if (lisp(a))return nilp(a);
-    if (arrp(a) || synp(a) || strp(a) || fnp(a) || objp(a)){
-      return is(len(a), "0");
+  function emp(a){
+    switch (typ(a)){
+      case "cons": return false;
+      case "sym": if (dat(a) === "nil")return true;
+      case "str":
+      case "num":
+      case "arr":
+      case "obj": return is(len(a), nu("0"));
     }
-    if (udfp(a))return true;
     err(emp, "Can't find if a = $1 is empty", a);
-  }*/
+  }
   
   function cpy(a){
     var t = typ(a);
@@ -1025,24 +1028,26 @@
   
   //// Parts ////
   
-  /*function sli(a, n, m){
-    if (lisp(a))return ncdr(n, udfp(m)?a:fstn(m, a));
+  function sli(a, n, m){
+    var t = typ(a);
+    if (t === "cons")return ncdr(n, udfp(m)?a:fstnlis(m, a));
     if (udfp(m))m = len(a);
-    if (synp(a))return $.sli(a, $.num(n), $.num(m));
-    if (strp(a))return s(sli(rp(a), n, m));
-    if (arrp(a))return r($.sli(rp(a), $.num(n), $.num(m)));
+    switch (t){
+      case "sym": if (dat(a) === "nil")return nil();
+      case "str":
+      case "num":
+      case "arr": return mkdat(t, $.sli(dat(a), jnum(n), jnum(m)));
+    }
     err(sli, "Can't slice a = $1 from n = $2 to m = $3", a, n, m);
   }
   
   function fstn(n, a){
-    if (lisp(a))return fstnlis(n, a);
-    return sli(a, "0", n);
-    err(fstn, "Can't get fst n = $1 of a = $2", n, a);
+    return sli(a, nu("0"), n);
   }
   
   function fstnlis(n, a){
-    if (le(n, "0") || nilp(a))return [];
-    return cons(car(a), fstnlis(sub(n, "1"), cdr(a)));
+    if (le(n, nu("0")) || nilp(a))return nil();
+    return cons(car(a), fstnlis(sub1(n), cdr(a)));
   }
   
   function rstn(n, a){
@@ -1050,12 +1055,12 @@
   }
   
   function rst(a){
-    return sli(a, "1");
+    return sli(a, nu("1"));
   }
   
   function mid(a){
-    return sli(a, "1", sub(len(a), "1"));
-  }*/
+    return sli(a, nu("1"), sub1(len(a)));
+  }
   
   //// Group ////
   
@@ -1082,26 +1087,30 @@
     err(spl, "Can't split a = $1 by x = $2", a, x);
   }
   
-  /*function grp(a, n){
-    if (!is(n, "0")){
-      if (lisp(a))return grplis(a, n);
-      if (synp(a) || strp(a))return grpstr(a, n);
-      if (arrp(a))return r($.map(r, $.grp(rp(a), $.num(n))));
+  function grp(a, n){
+    if (isn(n, nu("0"))){
+      switch (typ(a)){
+        case "cons": return grplis(a, n);
+        case "sym": if (dat(a) === "nil")return nil();
+        case "str":
+        case "num": return grpstr(a, n);
+        case "arr": return ar($.map(ar, $.grp(dat(a), jnum(n))));
+      }
     }
     err(grp, "Can't grp a = $1 into grps of n = $2", a, n);
   }
   
   function grplis(a, n){
-    if (nilp(a))return [];
-    return cons(fstn(n, a), grp(ncdr(n, a), n));
+    if (nilp(a))return nil();
+    return cons(fstn(n, a), grplis(ncdr(n, a), n));
   }
   
   function grpstr(a, n){
-    if (emp(a))return [];
-    return cons(fstn(n, a), grp(rstn(n, a), n));
+    if (emp(a))return nil();
+    return cons(fstn(n, a), grpstr(rstn(n, a), n));
   }
   
-  function par(a, b){
+  /*function par(a, b){
     if (nilp(a))return [];
     if (atmp(a))return lis(lis(a, b));
     return app(par(car(a), car(b)), par(cdr(a), cdr(b)));
@@ -1874,11 +1883,19 @@
     rpl: rpl,
     
     len: len,
+    emp: emp,
     cpy: cpy,
     rev: rev,
     revlis: revlis,
     
+    sli: sli,
+    fstn: fstn,
+    rstn: rstn,
+    rst: rst,
+    mid: mid,
+    
     spl: spl,
+    grp: grp,
     
     joi: joi,
     app: app,
@@ -1952,23 +1969,13 @@
     dmap: dmap,
     all: all,
     keep: keep,
-    rem: rem,
     remb: remb,
     reme: reme,
     mat: mat,
     mats: mats,
     
-    emp: emp,
     cln: cln,
     
-    sli: sli,
-    fstn: fstn,
-    rstn: rstn,
-    rst: rst,
-    mid: mid,
-    
-    spl: spl,
-    grp: grp,
     par: par,
     tup: tup,
     
