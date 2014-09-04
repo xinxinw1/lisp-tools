@@ -71,6 +71,14 @@
     return (a.cdr === udf)?nil():a.cdr;
   }
   
+  function gcar(a){
+    return a.car;
+  }
+  
+  function gcdr(a){
+    return a.cdr;
+  }
+  
   function cons(a, b){
     return {type: "cons", car: a, cdr: b};
   }
@@ -322,9 +330,11 @@
   
   function sta(a, x, f){
     psh(x, a);
-    var r = f();
-    pop(a);
-    return r;
+    try {
+      return f();
+    } finally {
+      pop(a);
+    }
   }
   
   ////// Display //////
@@ -596,6 +606,7 @@
           o = cdr(o);
         }
         return r;
+      case "sym": if (dat(a) === "nil")return [];
     }
     err(jarr, "Can't coerce a = $1 to jarr", a);
   }
@@ -651,7 +662,7 @@
       case "fn":
       case "nfn":
       case "jn2": return function (){
-        return $.apl(cal, $.hea(arguments, a));
+        return apl(a, tlis(ar(arguments)));
       };
     }
     return function (x){
@@ -669,7 +680,7 @@
       case "fn":
       case "nfn":
       case "jn2": return function (){
-        return bchk($.apl(cal, $.hea(arguments, a)));
+        return bchk(apl(a, tlis(ar(arguments))));
       };
     }
     return function (x){
@@ -691,7 +702,9 @@
       case "cons": return nth(n, a);
       case "sym": if (dat(a) === "nil")return nil(); // continues down
       case "num": 
-      case "str": return mkdat(t, chku($.ref(dat(a), jnum(n))));
+      case "str":
+        var r = chku($.ref(dat(a), jnum(n)));
+        return nilp(r)?r:mkdat(t, r);
       case "arr": return chku($.ref(dat(a), jnum(n)));
       case "obj": return chku($.ref(dat(a), prop(n)));
     }
@@ -722,9 +735,29 @@
   
   //// Apply ////
   
-  // input: lisp fn
+  // input: f = lisp fn, a = a lisp obj
+  // default aplfn only supports jns
+  var aplfn = function apl(f, a){
+    if (jnp(f))return $.apl(dat(f), jarr(a));
+    err(apl, "Can't apl f = $1 to a = $2", f, a);
+  };
+  
   function apl(f, a){
-    return $.apl(dat(f), jarr(a));
+    return aplfn(f, a);
+  }
+  
+  // no calling restrictions!
+  // all instances of apl are set with this
+  function sapl(f){
+    return aplfn = f;
+  }
+  
+  // input: f = lisp fn
+  // args are converted into a list
+  // $.apl(lis, $.sli(arguments, 1))
+  // when this is updated, update lisp-exec jcal as will
+  function cal(f){
+    return apl(f, tlis(ar($.sli(arguments, 1))));
   }
   
   function map(f, a){
@@ -1437,12 +1470,21 @@
     })(a);
     if (arrp(a))return chku($.shf(rp(a)));
     err(shf, "Can't shf from a = $1", a);
-  }
+  }*/
   
   ////// List //////
   
   //// cxr ////
   
+  // if called cxr(x):
+  //   input: x = a js str that only has "a" and "d" (ex "ada")
+  //   output: creates a function that calls car and cdr in the order of x
+  //             (ex. cxr("ada") === cadar )
+  // if called cxr(x, a):
+  //   the same as cxr(x)(a)
+  //   input: x = a js str that only has "a" and "d" (ex "ada")
+  //   output: calls car and cdr in the order of x on a
+  //             (ex. exr("ada", a) === cadar(a) )
   function cxr(x, a){
     if (udfp(a))return function (a){
       return cxr(x, a);
@@ -1451,14 +1493,14 @@
     if ($.beg(x, "a"))return car(cxr($.rst(x), a));
     if ($.beg(x, "d"))return cdr(cxr($.rst(x), a));
     err(cxr, "x = $1 must only contain a's and d's", x);
-  }*/
+  }
   
   //// General ////
   
   function nth(n, a){
     if (!nump(n))err(nth, "Can't get item n = $1 from a = $2", n, a);
-    if (nilp(a))return nil();
-    if (le(n, nu("0")))return car(a);
+    if (nilp(a) || lt(n, nu("0")))return nil();
+    if (is(n, nu("0")))return car(a);
     return nth(sub1(n), cdr(a));
   }
   
@@ -1601,7 +1643,11 @@
   
   ////// Object //////
   
-  /*function ohas(a, x){
+  // for all these functions:
+  // input: a = a js obj, x = a lisp obj, y = a lisp obj
+  // output: a js bool
+  
+  function ohas(a, x){
     return $.ohas(a, prop(x));
   }
   
@@ -1633,21 +1679,11 @@
     return $.oren(a, prop(x), prop(y));
   }
   
-  function owith(o, a, b){
+  function owith(o, x, y){
     var o2 = cpy(o);
-    oput(o2, a, b);
+    oput(o2, x, y);
     return o2;
   }
-  
-  ////// Function //////
-  
-  function cal(a){
-    return $.apl(a, $.sli(arguments, 1));
-  }
-  
-  function scal(f){
-    cal = f;
-  }*/
   
   ////// Checkers //////
   
@@ -1687,7 +1723,7 @@
   // special handler that uses dsp(a)
   /*function err(f, a){
     $.err2(f, dsj(f), rp(apl(stf, r($.sli(arguments, 1)))));
-  }
+  }*/
   
   ////// Other //////
   
@@ -1701,14 +1737,13 @@
   
   gs.n = 0;
   function gs(){
-    return "gs" + gs.n++;
+    return sy("gs" + gs.n++);
   }
   
+  // output: a js int
   function gsn(){
     return gs.n;
   }
-  
-  var tgsym = gs();*/
   
   ////// Object exposure //////
   
@@ -1735,6 +1770,8 @@
     
     car: car,
     cdr: cdr,
+    gcar: gcar,
+    gcdr: gcdr,
     cons: cons,
     nil: nil,
     scar: scar,
@@ -1817,6 +1854,8 @@
     las: las,
     
     apl: apl,
+    sapl: sapl,
+    cal: cal,
     map: map,
     mapn: mapn,
     pos: pos,
@@ -1843,6 +1882,8 @@
     pop: pop,
     
     
+    cxr: cxr,
+    
     nth: nth,
     ncdr: ncdr,
     nrev: nrev,
@@ -1861,12 +1902,26 @@
     
     stf: stf,
     
+    ohas: ohas,
+    oput: oput,
+    orem: orem,
+    oref: oref,
+    oset: oset,
+    osetp: osetp,
+    odel: odel,
+    oren: oren,
+    owith: owith,
     
     chku: chku,
     chkb: chkb,
     chrb: chrb,
     bchk: bchk,
-    bchr: bchr
+    bchr: bchr,
+    
+    dol: dol,
+    do1: do1,
+    gs: gs,
+    gsn: gsn
   };
   
   
@@ -1875,7 +1930,6 @@
     
     
     
-    jn: jn,
     
     dmap: dmap,
     all: all,
@@ -1914,38 +1968,16 @@
     each: each,
     oeach: oeach,
     
-    psh: psh,
-    pop: pop,
     ush: ush,
     shf: shf,
-    
-    cxr: cxr,
     
     napp: napp,
     
     low: low,
     upp: upp,
     
-    ohas: ohas,
-    oput: oput,
-    orem: orem,
-    oref: oref,
-    oset: oset,
-    osetp: osetp,
-    odel: odel,
-    oren: oren,
-    owith: owith,
-    
-    cal: cal,
-    scal: scal,
-    
     err: err,
     
-    dol: dol,
-    do1: do1,
-    gs: gs,
-    gsn: gsn,
-    tgsym: tgsym
   };*/
   
   if (nodep)module.exports = L;
