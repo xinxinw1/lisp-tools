@@ -148,13 +148,6 @@
   
   //// Predicates ////
   
-  var udfp = $.udfp;
-  
-  // !!a to deal with null and undefined inputs
-  function tagp(a){
-    return !!a && a.type !== udf;
-  }
-  
   function isa(t, a){
     return a.type === t;
   }
@@ -181,6 +174,13 @@
     return function (a){
       return a.type === t;
     };
+  }
+  
+  var udfp = $.udfp;
+  
+  // !!a to deal with null and undefined inputs
+  function tagp(a){
+    return !!a && a.type !== udf;
   }
   
   var symp = mkpre("sym");
@@ -263,7 +263,7 @@
   }
   
   function fnp(a){
-    return typin(a, "fn", "nfn", "jn", "jn2");
+    return typin(a, "fn", "jn", "jn2");
   }
   
   function specp(a){
@@ -372,7 +372,6 @@
       case "rgx": return "/" + dat(a).source + "/";
       case "jn": return "<jn " + $.dsp(dat(a)) + ">";
       case "fn": return dfn(a);
-      case "nfn": return dnfn(a);
     }
     var o = cpy(a);
     det(o, "type");
@@ -432,10 +431,6 @@
     /*return "<fn " + dsj(rep(a, "ag")) + " "
                     + dsj(rep(a, "bd")) + ">";*/
     return "<fn " + dsj(rep(a, "ag")) + ">";
-  }
-  
-  function dnfn(a){
-    return "<nfn " + dsj(rep(a, "bd")) + ">";
   }
   
   ////// Output //////
@@ -514,8 +509,7 @@
     switch (typ(a)){
       case "fn": 
       case "jn": 
-      case "jn2":
-      case "nfn": return a;
+      case "jn2": return a;
     }
     return jn(function (x){
       return is(x, a);
@@ -639,7 +633,6 @@
       case "str":
       case "rgx": return dat(a);
       case "fn": 
-      case "nfn":
       case "jn":
       case "jn2": return jbn(a);
       case "cons": 
@@ -660,7 +653,6 @@
     switch (typ(a)){
       case "jn": return dat(a);
       case "fn":
-      case "nfn":
       case "jn2": return function (){
         return apl(a, tlis(ar(arguments)));
       };
@@ -678,7 +670,6 @@
     switch (typ(a)){
       case "jn": return bchr(dat(a));
       case "fn":
-      case "nfn":
       case "jn2": return function (){
         return bchk(apl(a, tlis(ar(arguments))));
       };
@@ -865,22 +856,26 @@
     if (objp(a))return $.keep(jbn(x), a);
     if (arrp(a))return r($.keep(jbn(x), rp(a)));
     err(keep, "Can't keep x = $1 in a = $2", x, a);
-  }
+  }*/
   
   function rem(x, a){
-    if (lisp(a))return (function rem(x, a){
-      if (nilp(a))return [];
-      if (x(car(a)))return rem(x, cdr(a));
-      return cons(car(a), rem(x, cdr(a)));
-    })(jbn(x), a);
-    if (synp(a))return $.rem(jmat(x), a);
-    if (strp(a))return s(rem(x, rp(a)));
-    if (objp(a))return $.rem(jbn(x), a);
-    if (arrp(a))return r($.rem(jbn(x), rp(a)));
+    var t = typ(a);
+    switch (t){
+      case "cons": return (function rem(x, a){
+        if (nilp(a))return nil();
+        if (x(car(a)))return rem(x, cdr(a));
+        return cons(car(a), rem(x, cdr(a)));
+      })(jbn(x), a);
+      case "sym": if (dat(a) === "nil")return nil();
+      case "str": 
+      case "num": return mkdat(t, $.rem(jmat(x), dat(a)));
+      case "obj":
+      case "arr": return mkdat(t, $.rem(jbn(x), dat(a)));
+    }
     err(rem, "Can't rem x = $1 from a = $2", x, a);
   }
   
-  // remove from the beginning
+  /*// remove from the beginning
   function remb(x, a){
     if (lisp(a))return (function remb(x, a){
       if (nilp(a))return [];
@@ -1566,6 +1561,14 @@
   
   ////// Number //////
   
+  function odd(a){
+    return R.oddp(dat(a));
+  }
+  
+  function evn(a){
+    return R.evnp(dat(a));
+  }
+  
   function foldnum(f, a){
     var s = dat(a[0]);
     for (var i = 1; i < a.length; i++){
@@ -1639,6 +1642,10 @@
       if (!R.ge(dat(a[i-1]), dat(a[i])))return false;
     }
     return true;
+  }
+  
+  function rnd(a, p){
+    return nu(R.rnd(dat(a), jnum(p)));
   }
   
   ////// Object //////
@@ -1721,9 +1728,12 @@
   ////// Error //////
   
   // special handler that uses dsp(a)
-  /*function err(f, a){
-    $.err2(f, dsj(f), rp(apl(stf, r($.sli(arguments, 1)))));
-  }*/
+  // input: f = a js fn, a = a js str, rest = lisp objs
+  function err(f, a){
+    var r = $.sli(arguments, 1);
+    r[0] = st(r[0]);
+    $.err(f, dat($.apl(stf, r)));
+  }
   
   ////// Other //////
   
@@ -1860,6 +1870,7 @@
     mapn: mapn,
     pos: pos,
     has: has,
+    rem: rem,
     rpl: rpl,
     
     len: len,
@@ -1888,6 +1899,9 @@
     ncdr: ncdr,
     nrev: nrev,
     
+    odd: odd,
+    evn: evn,
+    
     add: add,
     add1: add1,
     sub: sub,
@@ -1899,6 +1913,8 @@
     gt: gt,
     le: le,
     ge: ge,
+    
+    rnd: rnd,
     
     stf: stf,
     
@@ -1917,6 +1933,8 @@
     chrb: chrb,
     bchk: bchk,
     bchr: bchr,
+    
+    err: err,
     
     dol: dol,
     do1: do1,
@@ -1976,7 +1994,6 @@
     low: low,
     upp: upp,
     
-    err: err,
     
   };*/
   
