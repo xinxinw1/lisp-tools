@@ -295,7 +295,7 @@
     if (typ(a) !== typ(b))return false;
     switch (typ(a)){
       case "cons": return ilis(a, b);
-      case "arr": 
+      case "arr": return iarr(a, b);
       case "obj": return iobj(a, b);
     }
     return is(a, b);
@@ -304,15 +304,26 @@
   function ilis(a, b){
     if (is(a, b))return true;
     if (atmp(a) || atmp(b))return false;
-    return ilis(car(a), car(b)) && ilis(cdr(a), cdr(b));
+    return iso(car(a), car(b)) && iso(cdr(a), cdr(b));
+  }
+  
+  function iarr(a, b){
+    a = dat(a); b = dat(b);
+    if (a.length !== b.length)return false;
+    for (var i = 0; i < a.length; i++){
+      if (!iso(a[i], b[i]))return false;
+    }
+    return true;
   }
   
   function iobj(a, b){
     a = dat(a); b = dat(b);
     for (var i in a){
+      if (!$.ohas(b, i))return false;
       if (!iso(a[i], b[i]))return false;
     }
     for (var i in b){
+      if (!$.ohas(a, i))return false;
       if (!iso(a[i], b[i]))return false;
     }
     return true;
@@ -1147,31 +1158,40 @@
     err(joi, "Can't join a = $1 with x = $2", a, x);
   }
   
-  /*function fla(a, x){
+  function fla(a, x){
     if (udfp(x)){
-      if (lisp(a))return fold(app2, [], a);
-      if (arrp(a))return fold(app2, r([]), a);
+      switch (typ(a)){
+        case "cons": return fold(jn(app2), nil(), a);
+        case "arr": return fold(jn(app2), ar([]), a);
+        case "sym": if (dat(a) === "nil")return nil();
+      }
       err(fla, "Can't flat a = $1", a);
     }
-    if (lisp(a))return fold(function (r, a){
-      if (emp(r))return app(r, a);
-      return app(r, x, a);
-    }, [], a);
-    if (arrp(a))return fold(function (r, a){
-      if (emp(r))return app(r, a);
-      return app(r, x, a);
-    }, r([]), a);
+    switch (typ(a)){
+      case "cons": return fold(jn(function (r, a){
+        if (emp(r))return app(r, a);
+        return app(r, x, a);
+      }), nil(), a);
+      case "arr": return fold(jn(function (r, a){
+        if (emp(r))return app(r, a);
+        return app(r, x, a);
+      }), ar([]), a);
+      case "sym": if (dat(a) === "nil")return nil();
+    }
     err(fla, "Can't flat a = $1 with x = $2", a, x);
-  }*/
+  }
   
   function app(){
     var a = arguments;
     if ($.len(a) == 0)return nil();
-    return $.fold(app2, $.rem(nilp, a));
+    return $.fold(app2, a);
   }
   
   function app2(a, b){
     switch (typ(a)){
+      case "sym":
+        if (dat(a) !== "nil")return sy($.app(dat(a), dat(sym(b))));
+        // else continue to "cons"
       case "cons": 
         if (typin(b, "arr", "cons"))return (function app(a, b){
           if (nilp(a))return b;
@@ -1179,13 +1199,14 @@
           if (atmp(a))err(app, "a = $1 must be a list", a);
           return cons(car(a), app(cdr(a), b));
         })(a, tlis(b));
+        if (nilp(b))return a;
         return tai(a, b);
-      case "sym": return sy($.app(dat(a), dat(sym(b))));
       case "str": return st($.app(dat(a), dat(str1(b))));
       case "num": return nu($.app(dat(a), dat(num(b))));
       case "obj": return ob($.app(dat(a), dat(tobj(b))));
       case "arr": 
         if (typin(b, "arr", "cons"))return ar($.app(jarr(a), jarr(b)));
+        if (nilp(b))return a;
         return tai(a, b);
     }
     err(app2, "Can't app a = $1 to b = $2", a, b);
@@ -1214,6 +1235,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
+        case "sym": if (dat(a) === "nil")return nil();
         case "cons": return foldlis(tjn(f), x, a);
         case "arr": 
         case "obj": return $.fold(tjn(f), x, dat(a));
@@ -1248,6 +1270,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
+        case "sym": if (dat(a) === "nil")return nil();
         case "cons": return (function fold(f, x, a, i){
           if (nilp(a))return x;
           return fold(f, f(x, car(a), i), cdr(a), add1(i));
@@ -1283,6 +1306,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
+        case "sym": if (dat(a) === "nil")return nil();
         case "cons": return (function fold(f, x, a){
           if (nilp(a))return x;
           return fold(f, f(car(a), x), cdr(a));
@@ -1312,6 +1336,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
+        case "sym": if (dat(a) === "nil")return nil();
         case "cons": return (function fold(f, x, a, i){
           if (nilp(a))return x;
           return fold(f, f(car(a), x, i), cdr(a), sub1(i));
@@ -1347,24 +1372,30 @@
   
   //// Array ////
   
-  /*function hea(a, x){
-    if (lisp(a))return cons(x, a);
-    if (arrp(a))return ush(x, cpy(a));
+  function hea(a, x){
+    switch (typ(a)){
+      case "sym": if (dat(a) === "nil")return cons(x, a);
+      case "cons": return cons(x, a);
+      case "arr": return ush(x, cpy(a));
+    }
     err(hea, "Can't hea a = $1 with x = $2", a, x);
   }
   
   function tai(a, x){
-    if (lisp(a))return (function tai(a, x){
-      if (nilp(a))return lis(x);
-      return cons(car(a), tai(cdr(a), x));
-    })(a, x);
-    if (arrp(a))return psh(x, cpy(a));
+    switch (typ(a)){
+      case "sym": if (dat(a) === "nil")return lis(x);
+      case "cons": return (function tai(a, x){
+        if (nilp(a))return lis(x);
+        return cons(car(a), tai(cdr(a), x));
+      })(a, x);
+      case "arr": return psh(x, cpy(a));
+    }
     err(tai, "Can't tai a = $1 with x = $2", a, x);
   }
   
   //// Other ////
   
-  function beg(a){
+  /*function beg(a){
     var x = $.sli(arguments, 1);
     if (synp(a) || strp(a))return is(pos(r(x), a), "0");
     if (lisp(a) || arrp(a))return $.has(fst(a), x);
@@ -1908,6 +1939,7 @@
     grp: grp,
     
     joi: joi,
+    fla: fla,
     app: app,
     app2: app2,
     
@@ -1915,6 +1947,9 @@
     foldi: foldi,
     foldr: foldr,
     foldri: foldri,
+    
+    hea: hea,
+    tai: tai,
     
     psh: psh,
     pop: pop,
@@ -1989,12 +2024,8 @@
     par: par,
     tup: tup,
     
-    fla: fla,
     
     evry: evry,
-    
-    hea: hea,
-    tai: tai,
     
     beg: beg,
     end: end,
