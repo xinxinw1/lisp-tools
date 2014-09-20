@@ -84,7 +84,7 @@
   }
   
   function nil(){
-    return {type: "sym", data: "nil"};
+    return {type: "nil"};
   }
   
   function scar(a, x){
@@ -183,6 +183,7 @@
     return !!a && a.type !== udf;
   }
   
+  var nilp = mkpre("nil");
   var symp = mkpre("sym");
   var nump = mkpre("num");
   var strp = mkpre("str");
@@ -246,9 +247,9 @@
     return a.type === "smac";
   }*/
   
-  function nilp(a){
+  /*function nilp(a){
     return symp(a) && dat(a) === "nil";
-  }
+  }*/
   
   function lisp(a){
     return consp(a) || nilp(a);
@@ -279,6 +280,7 @@
   function is(a, b){
     if (typ(a) !== typ(b))return false;
     switch (typ(a)){
+      case "nil": return true; // typ(a) already === typ(b)
       case "num":
       case "sym":
       case "str": return dat(a) === dat(b);
@@ -374,6 +376,7 @@
   function dsj2(a){
     if (!tagp(a))return $.stf("<js $1>", a);
     switch (typ(a)){
+      case "nil": return "nil";
       case "num": 
       case "sym": return dsym(a);
       case "str": return $.dsp(dat(a));
@@ -495,6 +498,7 @@
   
   function sym(a){
     switch (typ(a)){
+      case "nil": return sy("");
       case "sym": return a;
       case "num":
       case "str": return sy(dat(a));
@@ -508,8 +512,9 @@
   
   function str1(a){
     switch (typ(a)){
+      case "nil": return st("");
       case "str": return a;
-      case "sym": return (dat(a) === "nil")?st(""):st(dat(a));
+      case "sym": 
       case "num": return st(dat(a));
     }
     return dsp(a);
@@ -542,6 +547,7 @@
     switch (t){
       case "arr": return a;
       case "cons": return ar(jarr(a));
+      case "nil": return ar([]);
       case "sym":
       case "str":
       case "num": return ar($.map(mkbui(t), $.tarr(dat(a))));
@@ -551,6 +557,7 @@
   
   function tlis(a){
     switch (typ(a)){
+      case "nil":
       case "cons": return a;
       case "arr": return $.apl(lis, dat(a));
       case "sym":
@@ -558,7 +565,7 @@
       case "num": return tlis(tarr(a));
       case "obj": return $.foldi(function (l, x, i){
         return cons(cons(i, x), l);
-      }, [], a);
+      }, nil(), a);
     }
     err(tlis, "Can't coerce a = $1 to lis", a);
   }
@@ -584,6 +591,7 @@
     var t = typ(a);
     switch (t){
       case "obj": return a;
+      case "nil": return ob({});
       case "cons": return foldlis(function (o, x){
         if (atmp(x))err(tobj, "Can't coerce a = $1 to obj", a);
         o[prop(car(x))] = cdr(x);
@@ -621,7 +629,7 @@
           o = cdr(o);
         }
         return r;
-      case "sym": if (dat(a) === "nil")return [];
+      case "nil": return [];
     }
     err(jarr, "Can't coerce a = $1 to jarr", a);
   }
@@ -649,7 +657,8 @@
   
   function jmat(a){
     switch (typ(a)){
-      case "sym": return (dat(a) === "nil")?"":dat(a);
+      case "nil": return "";
+      case "sym": 
       case "num":
       case "str":
       case "rgx": return dat(a);
@@ -712,7 +721,8 @@
     var t = typ(a);
     switch (t){
       case "cons": return nth(n, a);
-      case "sym": if (dat(a) === "nil")return nil(); // continues down
+      case "nil": return nil();
+      case "sym": 
       case "num": 
       case "str":
         var r = chku($.ref(dat(a), jnum(n)));
@@ -726,6 +736,7 @@
   function set(a, n, x){
     if (udfp(x))x = nil();
     switch (typ(a)){
+      case "nil":
       case "cons": return (function set(a, n, x){
         if (nilp(a))psh(nil(), a);
         if (le(n, nu("0")))return scar(a, x);
@@ -774,6 +785,7 @@
   
   function map(f, a){
     switch (typ(a)){
+      case "nil":
       case "cons": return maplis(tjn(f), a);
       case "arr": return ar($.map(tjn(f), dat(a)));
       case "obj": return ob($.map(tjn(f), dat(a)));
@@ -783,6 +795,7 @@
   
   function mapn(f, a){
     switch (typ(a)){
+      case "nil":
       case "cons": return maplis(f, a);
       case "arr": return ar($.map(f, dat(a)));
       case "obj": return ob($.map(f, dat(a)));
@@ -821,6 +834,7 @@
     if (udfp(n))n = nu("0");
     var t = typ(a);
     switch (t){
+      case "nil": return nu("-1");
       case "cons": return (function pos(x, a, n){
         if (nilp(a))return nu("-1");
         if (x(car(a)))return n;
@@ -828,7 +842,7 @@
       })(jbn(x), ncdr(n, a), n);
       case "arr":
       case "obj": return lnum($.pos(jbn(x), dat(a), jnum(n)));
-      case "sym": if (dat(a) === "nil")return nu("-1");
+      case "sym": 
       case "num": 
       case "str": return lnum($.pos(jmat(x), dat(a), jnum(n)));
     }
@@ -837,10 +851,11 @@
   
   function has(x, a){
     switch (typ(a)){
+      case "nil": return false;
       case "cons": return haslis(jbn(x), a);
       case "arr":
       case "obj": return $.has(jbn(x), dat(a));
-      case "sym": if (dat(a) === "nil")return false;
+      case "sym": 
       case "num":
       case "str": return $.has(jmat(x), dat(a));
     }
@@ -882,12 +897,13 @@
   function rem(x, a){
     var t = typ(a);
     switch (t){
+      case "nil": return nil();
       case "cons": return (function rem(x, a){
         if (nilp(a))return nil();
         if (x(car(a)))return rem(x, cdr(a));
         return cons(car(a), rem(x, cdr(a)));
       })(jbn(x), a);
-      case "sym": if (dat(a) === "nil")return nil();
+      case "sym": 
       case "str": 
       case "num": return mkdat(t, $.rem(jmat(x), dat(a)));
       case "obj":
@@ -918,11 +934,12 @@
   function rpl(x, y, a){
     var t = typ(a);
     switch (t){
+      case "nil": return nil();
       case "cons": return (function rpl(x, y, a){
         if (nilp(a))return nil();
         return cons(x(car(a))?y:car(a), rpl(x, y, cdr(a)));
       })(jbn(x), y, a);
-      case "sym": if (dat(a) === "nil")return nil();
+      case "sym": 
       case "str":
       case "num": return mkdat(t, $.rpl(jmat(x), jmat(y), dat(a)));
       case "obj":
@@ -965,7 +982,8 @@
   function len(a){
     switch (typ(a)){
       case "cons": return lenlis(a);
-      case "sym": if (dat(a) === "nil")return nu("0");
+      case "nil": return nu("0");
+      case "sym": 
       case "num":
       case "str":
       case "obj": 
@@ -993,7 +1011,8 @@
   function emp(a){
     switch (typ(a)){
       case "cons": return false;
-      case "sym": if (dat(a) === "nil")return true;
+      case "nil": return true;
+      case "sym": 
       case "str":
       case "num":
       case "arr":
@@ -1006,6 +1025,7 @@
     var t = typ(a);
     switch (t){
       case "cons": return map(jn($.self), a);
+      case "nil": return nil();
       case "str":
       case "num":
       case "sym":
@@ -1025,7 +1045,8 @@
     var t = typ(a);
     switch (t){
       case "cons": return revlis(a);
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
+      case "sym": 
       case "str":
       case "num": 
       case "arr": return mkdat(t, $.rev(dat(a)));
@@ -1054,7 +1075,8 @@
     if (t === "cons")return ncdr(n, udfp(m)?a:fstnlis(m, a));
     if (udfp(m))m = len(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
+      case "sym": 
       case "str":
       case "num":
       case "arr": return mkdat(t, $.sli(dat(a), jnum(n), jnum(m)));
@@ -1088,11 +1110,12 @@
   function spl(a, x){
     var t = typ(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return lis(nil());
+      case "sym":
       case "str": 
       case "num":
         if (udfp(x))x = L.st("");
         return tlis(ar($.map(mkbui(t), $.spl(dat(a), jmat(x)))));
+      case "nil": return lis(nil());
       case "cons":
         if (udfp(x))return grp(a, L.nu("1"));
         return (function spl(a, x, c){
@@ -1112,7 +1135,8 @@
     if (isn(n, nu("0"))){
       switch (typ(a)){
         case "cons": return grplis(a, n);
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
+        case "sym": 
         case "str":
         case "num": return grpstr(a, n);
         case "arr": return ar($.map(ar, $.grp(dat(a), jnum(n))));
@@ -1149,6 +1173,7 @@
   function joi(a, x){
     if (udfp(x))x = st("");
     switch (typ(a)){
+      case "nil":
       case "cons":
       case "arr": return fold(jn(function (r, i){
         if (is(r, st("")))return str1(i);
@@ -1163,7 +1188,7 @@
       switch (typ(a)){
         case "cons": return fold(jn(app2), nil(), a);
         case "arr": return fold(jn(app2), ar([]), a);
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
       }
       err(fla, "Can't flat a = $1", a);
     }
@@ -1176,7 +1201,7 @@
         if (emp(r))return app(r, a);
         return app(r, x, a);
       }), ar([]), a);
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
     }
     err(fla, "Can't flat a = $1 with x = $2", a, x);
   }
@@ -1189,9 +1214,7 @@
   
   function app2(a, b){
     switch (typ(a)){
-      case "sym":
-        if (dat(a) !== "nil")return sy($.app(dat(a), dat(sym(b))));
-        // else continue to "cons"
+      case "nil":
       case "cons": 
         if (typin(b, "arr", "cons"))return (function app(a, b){
           if (nilp(a))return b;
@@ -1201,6 +1224,7 @@
         })(a, tlis(b));
         if (nilp(b))return a;
         return tai(a, b);
+      case "sym": return sy($.app(dat(a), dat(sym(b))));
       case "str": return st($.app(dat(a), dat(str1(b))));
       case "num": return nu($.app(dat(a), dat(num(b))));
       case "obj": return ob($.app(dat(a), dat(tobj(b))));
@@ -1235,7 +1259,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
         case "cons": return foldlis(tjn(f), x, a);
         case "arr": 
         case "obj": return $.fold(tjn(f), x, dat(a));
@@ -1245,7 +1269,7 @@
     a = x;
     var t = typ(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
       case "cons": return fold(f, car(a), cdr(a));
       case "arr":
       case "obj": return $.fold(tjn(f), dat(a));
@@ -1270,7 +1294,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
         case "cons": return (function fold(f, x, a, i){
           if (nilp(a))return x;
           return fold(f, f(x, car(a), i), cdr(a), add1(i));
@@ -1287,7 +1311,7 @@
     a = x;
     var t = typ(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
       case "cons": return (function fold(f, x, a, i){
         if (nilp(a))return x;
         return fold(f, f(x, car(a), i), cdr(a), add1(i));
@@ -1306,7 +1330,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
         case "cons": return (function fold(f, x, a){
           if (nilp(a))return x;
           return fold(f, f(car(a), x), cdr(a));
@@ -1319,7 +1343,7 @@
     a = x;
     var t = typ(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
       case "cons":
         var b = rev(a);
         return (function fold(f, x, a){
@@ -1336,7 +1360,7 @@
     if (arguments.length >= 3){
       var t = typ(a);
       switch (t){
-        case "sym": if (dat(a) === "nil")return nil();
+        case "nil": return nil();
         case "cons": return (function fold(f, x, a, i){
           if (nilp(a))return x;
           return fold(f, f(car(a), x, i), cdr(a), sub1(i));
@@ -1353,7 +1377,7 @@
     a = x;
     var t = typ(a);
     switch (t){
-      case "sym": if (dat(a) === "nil")return nil();
+      case "nil": return nil();
       case "cons":
         var b = rev(a);
         return (function fold(f, x, a, i){
@@ -1374,7 +1398,7 @@
   
   function hea(a, x){
     switch (typ(a)){
-      case "sym": if (dat(a) === "nil")return cons(x, a);
+      case "nil": 
       case "cons": return cons(x, a);
       case "arr": return ush(x, cpy(a));
     }
@@ -1383,7 +1407,7 @@
   
   function tai(a, x){
     switch (typ(a)){
-      case "sym": if (dat(a) === "nil")return lis(x);
+      case "nil": return lis(x);
       case "cons": return (function tai(a, x){
         if (nilp(a))return lis(x);
         return cons(car(a), tai(cdr(a), x));
@@ -1451,14 +1475,11 @@
   
   function psh(x, a){
     switch (typ(a)){
-      case "sym":
-        if (dat(a) === "nil"){
-          tag(a, "type", "cons")
-          det(a, "data");
-          tag(a, "car", x);
-          tag(a, "cdr", nil());
-          return a;
-        }
+      case "nil":
+        tag(a, "type", "cons");
+        tag(a, "car", x);
+        tag(a, "cdr", nil());
+        return a;
       case "cons":
         scdr(a, cons(car(a), cdr(a)));
         scar(a, x);
@@ -1472,13 +1493,13 @@
   
   function pop(a){
     switch (typ(a)){
+      case "nil": return nil();
       case "cons":
         var x = car(a);
         if (nilp(cdr(a))){
-          tag(a, "type", "sym")
+          tag(a, "type", "nil");
           det(a, "car");
           det(a, "cdr");
-          tag(a, "data", "nil");
         } else {
           scar(a, cadr(a));
           scdr(a, cddr(a));
@@ -1489,33 +1510,34 @@
     err(pop, "Can't pop from a = $1", a);
   }
   
-  /*function ush(x, a){
-    if (lisp(a)){
-      (function ush(x, a){
-        if (nilp(a)){
-          psh(x, a);
-          return;
-        }
-        ush(x, cdr(a));
-      })(x, a);
-      return a;
-    }
-    if (arrp(a)){
-      $.ush(x, rp(a));
-      return a;
+  function ush(x, a){
+    switch (typ(a)){
+      case "nil": return psh(x, a);
+      case "cons":
+        do {
+          a = cdr(a);
+        } while (consp(a));
+        psh(x, a);
+        return a;
+      case "arr":
+        $.ush(x, dat(a));
+        return a;
     }
     err(ush, "Can't ush x = $1 onto a = $2", x, a);
   }
   
   function shf(a){
-    if (lisp(a))return (function shf(a){
-      if (nilp(a))return [];
-      if (nilp(cdr(a)))return pop(a);
-      return shf(cdr(a));
-    })(a);
-    if (arrp(a))return chku($.shf(rp(a)));
+    switch (typ(a)){
+      case "nil": return nil();
+      case "cons":
+        do {
+          a = cdr(a);
+        } while (consp(a));
+        return pop(a);
+      case "arr": return chku($.shf(dat(a)));
+    }
     err(shf, "Can't shf from a = $1", a);
-  }*/
+  }
   
   ////// List //////
   
@@ -1953,7 +1975,8 @@
     
     psh: psh,
     pop: pop,
-    
+    ush: ush,
+    shf: shf,
     
     cxr: cxr,
     
@@ -2033,9 +2056,6 @@
     
     each: each,
     oeach: oeach,
-    
-    ush: ush,
-    shf: shf,
     
     napp: napp,
     
