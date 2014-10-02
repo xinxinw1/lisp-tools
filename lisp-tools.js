@@ -666,7 +666,7 @@
       case "jn":
       case "jn2": return jbn(a);
       case "cons": 
-      case "arr": return jarr(map(jmat, a));
+      case "arr": return jarr(map(jn(jmat), a));
     }
     err(jmat, "Can't coerce a = $1 to jmat", a);
   }
@@ -1419,14 +1419,20 @@
   
   //// Other ////
   
-  /*function beg(a){
+  function beg(a){
     var x = $.sli(arguments, 1);
-    if (synp(a) || strp(a))return is(pos(r(x), a), "0");
-    if (lisp(a) || arrp(a))return $.has(fst(a), x);
-    err(beg, "Can't find if a = $1 begs with x = $2", a, $.dsp(x));
+    switch (typ(a)){
+      case "sym":
+      case "str":
+      case "num": return is(pos(ar(x), a), nu("0"));
+      case "cons":
+      case "arr": return has(fst(a), ar(x));
+      case "nil": return false;
+    }
+    err(beg, "Can't find if a = $1 begs with x = $2", a, ar(x));
   }
   
-  function end(a){
+  /*function end(a){
     var x = $.sli(arguments, 1);
     if (synp(a) || strp(a)){
       var c;
@@ -1608,17 +1614,23 @@
   
   ////// String //////
   
-  /*function low(a){
-    if (synp(a))return $.low(a);
-    if (strp(a))return s(low(rp(a)));
+  function low(a){
+    var t = typ(a);
+    switch (t){
+      case "sym":
+      case "str": return mkdat(t, $.low(dat(a)));
+    }
     err(low, "Can't lowercase a = $1", a);
   }
   
   function upp(a){
-    if (synp(a))return $.upp(a);
-    if (strp(a))return s(upp(rp(a)));
+    var t = typ(a);
+    switch (t){
+      case "sym":
+      case "str": return mkdat(t, $.upp(dat(a)));
+    }
     err(upp, "Can't uppercase a = $1", a);
-  }*/
+  }
   
   function stf(a){
     if (arguments.length == 0)return st("");
@@ -1919,7 +1931,7 @@
     tarr: tarr,
     tlis: tlis,
     tobj: tobj,
-    //prop: prop,
+    prop: prop,
     jstr: jstr,
     jarr: jarr,
     jnum: jnum,
@@ -1973,6 +1985,8 @@
     hea: hea,
     tai: tai,
     
+    beg: beg,
+    
     psh: psh,
     pop: pop,
     ush: ush,
@@ -2001,6 +2015,8 @@
     
     rnd: rnd,
     
+    low: low,
+    upp: upp,
     stf: stf,
     
     ohas: ohas,
@@ -2050,7 +2066,6 @@
     
     evry: evry,
     
-    beg: beg,
     end: end,
     bnd: bnd,
     
@@ -2059,8 +2074,6 @@
     
     napp: napp,
     
-    low: low,
-    upp: upp,
     
     
   };*/
