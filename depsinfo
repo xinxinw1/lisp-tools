@@ -1,4 +1,4 @@
-Sun Oct  5 13:28:44 EDT 2014
+Sun Oct  5 13:33:11 EDT 2014
 Depsfile is /home/secret2008/Documents/Program/git/lisp-tools/deps
 Output is /home/secret2008/Documents/Program/git/lisp-tools
 test-suite  master:index.html      .
@@ -6,6 +6,7 @@ test-suite  master:test-suite.css  .
 test-suite  master:test-suite.js   .
 tools       newrep:tools.js        libtest
 ajax        master:ajax.js         libtest
+lisp-tools  newrep:tests.js        .
 tools       master:tools.js        lib
 prec-math   master:prec-math.js    lib
 ajax        master:ajax.js         lib

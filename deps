@@ -7,6 +7,8 @@ test-suite            master:test-suite.js            .
 tools                 newrep:tools.js                 libtest
 ajax                  master:ajax.js                  libtest
 
+lisp-tools            newrep:tests.js                 .
+
 tools                 master:tools.js                 lib
 prec-math             master:prec-math.js             lib
 ajax                  master:ajax.js                  lib
