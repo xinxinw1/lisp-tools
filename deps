@@ -1,0 +1,14 @@
+# This file is a dependency definition
+# See https://github.com/xinxinw1/deps for more details
+test-suite            master:index.html               .
+test-suite            master:test-suite.css           .
+test-suite            master:test-suite.js            .
+
+tools                 newrep:tools.js                 libtest
+ajax                  master:ajax.js                  libtest
+
+tools                 master:tools.js                 lib
+prec-math             master:prec-math.js             lib
+ajax                  master:ajax.js                  lib
+
+lisp-tools            newrep:lisp-tools.js            lib

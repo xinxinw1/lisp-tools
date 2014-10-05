@@ -1,0 +1,4 @@
+* {margin: 0; padding: 0; border: 0 none; font: 13px "Courier New", "DejaVu Sans Mono", monospace;}
+
+#page {position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: auto;}
+#results {white-space: pre-wrap;}
