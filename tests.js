@@ -1,4 +1,4 @@
-/***** Lisp Tools Testing *****/
+title("Lisp Tools Testing");
 
 load("lib/tools.js");
 load("lib/ajax.js");
