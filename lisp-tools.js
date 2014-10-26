@@ -1448,30 +1448,29 @@
   
   function bnd(a, x, y){
     return beg(a, x) && end(a, y);
-  }
+  }*/
   
   ////// Imperative //////
   
   //// Each ////
   
   function each(a, f){
-    if (lisp(a))return (function each(a, f){
-      if (nilp(a))return [];
-      f(car(a));
-      return each(cdr(a), f);
-    })(a, jn(f));
-    if (arrp(a)){
-      $.each(rp(a), jn(f));
-      return [];
-    }
-    if (objp(a)){
-      $.each(a, jn(f));
-      return [];
+    switch (typ(a)){
+      case "nil": return nil();
+      case "cons": return (function each(a, f){
+        if (nilp(a))return nil();
+        f(car(a));
+        return each(cdr(a), f);
+      })(a, tjn(f));
+      case "arr":
+      case "obj":
+        $.each(dat(a), tjn(f));
+        return nil();
     }
     err(each, "Can't loop through each in a = $1 with f = $2", a, f);
   }
   
-  function oeach(a, f){
+  /*function oeach(a, f){
     var x = jn(f);
     for (var i in a)x(i, a[i]);
     return [];
@@ -1987,6 +1986,8 @@
     
     beg: beg,
     
+    each: each,
+    
     psh: psh,
     pop: pop,
     ush: ush,
@@ -2069,7 +2070,6 @@
     end: end,
     bnd: bnd,
     
-    each: each,
     oeach: oeach,
     
     napp: napp,

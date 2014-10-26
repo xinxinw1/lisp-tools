@@ -893,6 +893,10 @@ test('L.beg(L.nil(), 1, L.nil(), L.sy("nil"))', false);
 
 //// Each ////
 
+test('var a = L.lis(1, 2, 3); var n = 0; L.each(a, L.jn(function (a){n += a;})); n', 6);
+test('var a = L.arr(1, 2, 3); var n = 0; L.each(a, L.jn(function (a){n += a;})); n', 6);
+test('var a = L.ob({a: 1, b: 2, c: 3}); var n = 0; L.each(a, L.jn(function (a){n += a;})); n', 6);
+
 //// Array ////
 
 test('var a = L.nil(); L.psh(4, a) === a', true);
