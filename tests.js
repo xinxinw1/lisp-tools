@@ -295,6 +295,11 @@ test('L.dat(L.num(L.st("-1")))', "-1");
 test('L.typ(L.num(L.lis(L.nu("1"), L.nu("2"))))', "num");
 test('L.dat(L.num(L.lis(L.nu("1"), L.nu("2"))))', "0");
 
+test('L.has(L.tfn(L.st("test")), L.lis(L.st("tes"), L.st("tests"), L.sy("test")))', false);
+test('L.has(L.tfn(L.st("test")), L.lis(L.st("tes"), L.st("test"), L.sy("test")))', true);
+test('L.has(L.tfn(L.jn(function (a){return L.chkb(a > 3);})), L.lis(1, 2, 3))', false);
+test('L.has(L.tfn(L.jn(function (a){return L.chkb(a > 3);})), L.lis(2, 3, 4))', true);
+
 //test('L.tfn()');
 
 test('L.typ(L.tarr(L.lis(1, 2, 3)))', "arr");
@@ -1066,7 +1071,7 @@ test('L.dat(L.stf(L.sy("test $1 $2 $3"), ' +
 
 test('L.ohas({a: 3}, L.sy("a"))', true);
 test('L.ohas({a: 3}, L.sy("b"))', false);
-test('var a = {a: 3}; L.oput(a, L.sy("a"), 65); a.a', 65);
+test('var a = {a: 3}; L.oput(a, L.sy("a"), 65); L.oref(a, L.sy("a"))', 65);
 /*testdef('L.orem');
 testdef('L.oref');
 testdef('L.oset');

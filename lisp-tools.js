@@ -531,6 +531,8 @@
     return nu("0");
   }
   
+  // input: a lisp object
+  // output: a lisp fn that returns lisp objects
   function tfn(a){
     switch (typ(a)){
       case "fn": 
@@ -538,7 +540,7 @@
       case "jn2": return a;
     }
     return jn(function (x){
-      return is(x, a);
+      return chkb(is(x, a));
     });
   }
   
