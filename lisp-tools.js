@@ -43,8 +43,9 @@
     return $.app(o, {type: t});
   }
   
-  function mkdat(t, d){
-    return {type: t, data: d};
+  function mkdat(t, d, o){
+    if (udfp(o))return {type: t, data: d};
+    return $.app(o, {type: t, data: d});
   }
   
   function mkbui(t){
@@ -866,7 +867,7 @@
   
   function haslis(x, a){
     if (nilp(a))return false;
-    if (x(car(a)))return true;
+    if (x(car(a)))return a;
     return haslis(x, cdr(a));
   }
   
@@ -1225,7 +1226,7 @@
           return cons(car(a), app(cdr(a), b));
         })(a, tlis(b));
         if (nilp(b))return a;
-        return tai(a, b);
+        return tail(a, b);
       case "sym": return sy($.app(dat(a), dat(sym(b))));
       case "str": return st($.app(dat(a), dat(str1(b))));
       case "num": return nu($.app(dat(a), dat(num(b))));
@@ -1233,7 +1234,7 @@
       case "arr": 
         if (typin(b, "arr", "cons"))return ar($.app(jarr(a), jarr(b)));
         if (nilp(b))return a;
-        return tai(a, b);
+        return tail(a, b);
     }
     err(app2, "Can't app a = $1 to b = $2", a, b);
   }
@@ -1398,25 +1399,25 @@
   
   //// Array ////
   
-  function hea(a, x){
+  function head(a, x){
     switch (typ(a)){
       case "nil": 
       case "cons": return cons(x, a);
       case "arr": return ush(x, cpy(a));
     }
-    err(hea, "Can't hea a = $1 with x = $2", a, x);
+    err(head, "Can't head a = $1 with x = $2", a, x);
   }
   
-  function tai(a, x){
+  function tail(a, x){
     switch (typ(a)){
       case "nil": return lis(x);
-      case "cons": return (function tai(a, x){
+      case "cons": return (function tail(a, x){
         if (nilp(a))return lis(x);
-        return cons(car(a), tai(cdr(a), x));
+        return cons(car(a), tail(cdr(a), x));
       })(a, x);
       case "arr": return psh(x, cpy(a));
     }
-    err(tai, "Can't tai a = $1 with x = $2", a, x);
+    err(tail, "Can't tail a = $1 with x = $2", a, x);
   }
   
   //// Other ////
@@ -1789,7 +1790,7 @@
   // output: a lisp bool
   function chkb(a){
     if (a === false)return nil();
-    return sy("t");
+    return a;
   }
   
   // input: js fn that returns js bools
@@ -1983,8 +1984,8 @@
     foldr: foldr,
     foldri: foldri,
     
-    hea: hea,
-    tai: tai,
+    head: head,
+    tail: tail,
     
     beg: beg,
     
