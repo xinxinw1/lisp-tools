@@ -40,6 +40,7 @@
   //// Builders ////
   
   function mk(t, o){
+    if (udfp(o))return {type: t};
     return $.app(o, {type: t});
   }
   
@@ -1790,6 +1791,7 @@
   // output: a lisp bool
   function chkb(a){
     if (a === false)return nil();
+    if (a === true)return sy("t");
     return a;
   }
   
