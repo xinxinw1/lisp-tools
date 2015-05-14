@@ -273,7 +273,7 @@
     return typin(a, "mac", "smac", "spec");
   }
   
-  function prcp(a){
+  function procp(a){
     return fnp(a) || specp(a);
   }
   
@@ -1907,7 +1907,7 @@
     synp: synp,
     fnp: fnp,
     specp: specp,
-    prcp: prcp,
+    procp: procp,
     
     is: is,
     isn: isn,
