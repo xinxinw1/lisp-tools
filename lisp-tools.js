@@ -1779,6 +1779,12 @@
     return o2;
   }
   
+  ////// Time //////
+  
+  function currtim(){
+    return lnum($.tim());
+  }
+  
   ////// Checkers //////
   
   // input: a lisp obj that might be udf
@@ -2034,6 +2040,8 @@
     odel: odel,
     oren: oren,
     owith: owith,
+    
+    currtim: currtim,
     
     chku: chku,
     chkb: chkb,
