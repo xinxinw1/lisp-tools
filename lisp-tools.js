@@ -391,6 +391,7 @@
                                  + $.dsp(rep(a, "fn")) + ">";
       case "fn": return dfn(a);
       case "mac": return dmac(a);
+      case "smac": return dsmac(a);
       case "spec": return "<spec " + dat(a) + ">";
     }
     var o = cpy(a);
@@ -417,7 +418,7 @@
     if (is(car(a), sy("uqs")))return ",@" + dsj(cadr(a));
     if (is(car(a), sy("qgs")))return "#" + dsj(cadr(a));
     if (is(car(a), sy("splice")))return "@" + dsj(cadr(a));
-    if (is(car(a), sy("nfn")))return "(fn (_) " + dsj(cadr(a)) + ")";
+    if (is(car(a), sy("fn1")))return "(fn (_) " + dsj(cadr(a)) + ")";
     return "(" + sta(dlists, a, function (){
       return dlis2(a);
     }) + ")";
@@ -457,6 +458,12 @@
     var nm = rep(a, "nm");
     if (!nilp(nm))return "<mac " + nm + " " + dsj(rep(dat(a), "ag")) + ">";
     return "<mac " + dsj(rep(dat(a), "ag")) + ">";
+  }
+  
+  function dsmac(a){
+    var nm = rep(a, "nm");
+    if (!nilp(nm))return "<smac " + nm + " " + dsj(rep(dat(a), "bd")) + ">";
+    return "<smac " + dsj(rep(dat(a), "bd")) + ">";
   }
   
   ////// Output //////
@@ -1149,9 +1156,18 @@
     err(grp, "Can't grp a = $1 into grps of n = $2", a, n);
   }
   
-  function grplis(a, n){
+  /*function grplis(a, n){
     if (nilp(a))return nil();
     return cons(fstn(n, a), grplis(ncdr(n, a), n));
+  }*/
+  
+  function grplis(a, n){
+    var r = nil();
+    while (!nilp(a)){
+      psh(fstn(n, a), r);
+      a = ncdr(n, a);
+    }
+    return nrev(r);
   }
   
   function grpstr(a, n){
@@ -1239,6 +1255,21 @@
     }
     err(app2, "Can't app a = $1 to b = $2", a, b);
   }
+  
+  function afta(a, x){
+    if (nilp(a))return nil();
+    return lisd(car(a), x, afta(cdr(a), x));
+  }
+  
+  /*function afta(a, x){
+    var r = nil();
+    while (!nilp(a)){
+      psh(car(a), r);
+      psh(x, r);
+      a = cdr(a);
+    }
+    return nrev(r);
+  }*/
   
   //// ??? ////
   
@@ -1461,17 +1492,27 @@
   function each(a, f){
     switch (typ(a)){
       case "nil": return nil();
-      case "lis": return (function each(a, f){
-        if (nilp(a))return nil();
-        f(car(a));
-        return each(cdr(a), f);
-      })(a, tjn(f));
+      case "lis": return eachlis(a, tjn(f));
       case "arr":
       case "obj":
         $.each(dat(a), tjn(f));
         return nil();
     }
     err(each, "Can't loop through each in a = $1 with f = $2", a, f);
+  }
+  
+  /*function eachlis(a, f){
+    if (nilp(a))return nil();
+    f(car(a));
+    return eachlis(cdr(a), f);
+  }*/
+  
+  function eachlis(a, f){
+    while (!nilp(a)){
+      f(car(a));
+      a = cdr(a);
+    }
+    return nil();
   }
   
   /*function oeach(a, f){
@@ -1986,6 +2027,7 @@
     fla: fla,
     app: app,
     app2: app2,
+    afta: afta,
     
     fold: fold,
     foldi: foldi,
