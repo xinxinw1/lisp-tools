@@ -56,7 +56,13 @@
   }
   
   var sy = mkbui("sym");
-  var nu = mkbui("num");
+  
+  function nu(a){
+    var n = R.real(a);
+    if (n === false)err(nu, "Invalid number $1", a);
+    return mkdat("num", n);
+  }
+  
   var st = mkbui("str");
   var ar = mkbui("arr");
   var ob = mkbui("obj");
@@ -262,7 +268,7 @@
   }
   
   function synp(a){
-    return typin(a, "sym", "num", "str");
+    return typin(a, "sym", "str");
   }
   
   function fnp(a){
@@ -283,7 +289,7 @@
     if (typ(a) !== typ(b))return false;
     switch (typ(a)){
       case "nil": return true; // typ(a) already === typ(b)
-      case "num":
+      case "num": return R.is(dat(a), dat(b));
       case "sym":
       case "str": return dat(a) === dat(b);
       case "rgx": return $.iso(dat(a), dat(b));
@@ -379,7 +385,7 @@
     if (!tagp(a))return $.stf("<js $1>", a);
     switch (typ(a)){
       case "nil": return "nil";
-      case "num": 
+      case "num": return R.tostr(dat(a));
       case "sym": return dsym(a);
       case "str": return $.dsp(dat(a));
       case "lis": return dlis(a);
@@ -509,7 +515,6 @@
     switch (typ(a)){
       case "nil": return sy("");
       case "sym": return a;
-      case "num":
       case "str": return sy(dat(a));
     }
     return sy(dsj(a));
@@ -523,8 +528,7 @@
     switch (typ(a)){
       case "nil": return st("");
       case "str": return a;
-      case "sym": 
-      case "num": return st(dat(a));
+      case "sym": return st(dat(a));
     }
     return dsp(a);
   }
@@ -560,8 +564,8 @@
       case "lis": return ar(jarr(a));
       case "nil": return ar([]);
       case "sym":
-      case "str":
-      case "num": return ar($.map(mkbui(t), $.tarr(dat(a))));
+      // case "num":
+      case "str": return ar($.map(mkbui(t), $.tarr(dat(a))));
     }
     err(tarr, "Can't coerce a = $1 to arr", a);
   }
@@ -621,11 +625,13 @@
   
   function prop(a){
     if (synp(a))return dat(a);
+    if (nump(a))return dsj(a);
     err(prop, "Invalid obj prop name a = $1", a);
   }
   
   function jstr(a){
     if (synp(a))return dat(a);
+    if (nump(a))return dsj(a);
     err(jstr, "Can't coerce a = $1 to jstr", a);
   }
   
@@ -657,7 +663,7 @@
   // input: lisp obj
   // output: js num
   function jnum(a){
-    return $.num(dat(num(a)));
+    return R.tonum(dat(num(a)));
   }
   
   // input: js obj
@@ -670,9 +676,9 @@
     switch (typ(a)){
       case "nil": return "";
       case "sym": 
-      case "num":
       case "str":
       case "rgx": return dat(a);
+      case "num": return dsj(a);
       case "fn": 
       case "jn":
       case "jn2": return jbn(a);
@@ -734,7 +740,7 @@
       case "lis": return nth(n, a);
       case "nil": return nil();
       case "sym": 
-      case "num": 
+      //case "num": 
       case "str":
         var r = chku($.ref(dat(a), jnum(n)));
         return nilp(r)?r:mkdat(t, r);
@@ -854,7 +860,7 @@
       case "arr":
       case "obj": return lnum($.pos(jbn(x), dat(a), jnum(n)));
       case "sym": 
-      case "num": 
+      //case "num": 
       case "str": return lnum($.pos(jmat(x), dat(a), jnum(n)));
     }
     err(pos, "Can't get pos of x = $1 in a = $2 from n = $3", x, a, n);
@@ -867,7 +873,7 @@
       case "arr":
       case "obj": return $.has(jbn(x), dat(a));
       case "sym": 
-      case "num":
+      //case "num":
       case "str": return $.has(jmat(x), dat(a));
     }
     err(has, "Can't find if a = $1 has x = $2", a, x);
@@ -915,8 +921,8 @@
         return cons(car(a), rem(x, cdr(a)));
       })(jbn(x), a);
       case "sym": 
-      case "str": 
-      case "num": return mkdat(t, $.rem(jmat(x), dat(a)));
+      //case "num":
+      case "str": return mkdat(t, $.rem(jmat(x), dat(a)));
       case "obj":
       case "arr": return mkdat(t, $.rem(jbn(x), dat(a)));
     }
@@ -951,8 +957,8 @@
         return cons(x(car(a))?y:car(a), rpl(x, y, cdr(a)));
       })(jbn(x), y, a);
       case "sym": 
-      case "str":
-      case "num": return mkdat(t, $.rpl(jmat(x), jmat(y), dat(a)));
+      //case "num":
+      case "str": return mkdat(t, $.rpl(jmat(x), jmat(y), dat(a)));
       case "obj":
       case "arr": return mkdat(t, $.rpl(jbn(x), y, dat(a)));
     }
@@ -995,7 +1001,7 @@
       case "lis": return lenlis(a);
       case "nil": return nu("0");
       case "sym": 
-      case "num":
+      //case "num":
       case "str":
       case "obj": 
       case "arr": return nu($.str($.len(dat(a))));
@@ -1025,7 +1031,7 @@
       case "nil": return true;
       case "sym": 
       case "str":
-      case "num":
+      //case "num":
       case "arr":
       case "obj": return is(len(a), nu("0"));
     }
@@ -1038,7 +1044,7 @@
       case "lis": return map(jn($.self), a);
       case "nil": return nil();
       case "str":
-      case "num":
+      //case "num":
       case "sym":
       case "obj":
       case "arr": return mkdat(t, $.cpy(dat(a)));
@@ -1059,7 +1065,7 @@
       case "nil": return nil();
       case "sym": 
       case "str":
-      case "num": 
+      //case "num": 
       case "arr": return mkdat(t, $.rev(dat(a)));
     }
     err(rev, "Can't reverse a = $1", a);
@@ -1089,7 +1095,7 @@
       case "nil": return nil();
       case "sym": 
       case "str":
-      case "num":
+      //case "num":
       case "arr": return mkdat(t, $.sli(dat(a), jnum(n), jnum(m)));
     }
     err(sli, "Can't slice a = $1 from n = $2 to m = $3", a, n, m);
@@ -1123,7 +1129,7 @@
     switch (t){
       case "sym":
       case "str": 
-      case "num":
+      //case "num":
         if (udfp(x))x = L.st("");
         return tlis(ar($.map(mkbui(t), $.spl(dat(a), jmat(x)))));
       case "nil": return lis(nil());
@@ -1148,8 +1154,8 @@
         case "lis": return grplis(a, n);
         case "nil": return nil();
         case "sym": 
-        case "str":
-        case "num": return grpstr(a, n);
+        //case "num":
+        case "str": return grpstr(a, n);
         case "arr": return ar($.map(ar, $.grp(dat(a), jnum(n))));
       }
     }
@@ -1246,7 +1252,7 @@
         return tail(a, b);
       case "sym": return sy($.app(dat(a), dat(sym(b))));
       case "str": return st($.app(dat(a), dat(str1(b))));
-      case "num": return nu($.app(dat(a), dat(num(b))));
+      //case "num": return nu($.app(dat(a), dat(num(b))));
       case "obj": return ob($.app(dat(a), dat(tobj(b))));
       case "arr": 
         if (typin(b, "arr", "lis"))return ar($.app(jarr(a), jarr(b)));
@@ -1458,8 +1464,8 @@
     var x = $.sli(arguments, 1);
     switch (typ(a)){
       case "sym":
-      case "str":
-      case "num": return is(pos(ar(x), a), nu("0"));
+      //case "num":
+      case "str": return is(pos(ar(x), a), nu("0"));
       case "lis":
       case "arr": return has(fst(a), ar(x));
       case "nil": return false;
@@ -1535,7 +1541,7 @@
         scar(a, x);
         return a;
       case "arr":
-        $.psh(x, dat(a));
+        $.push(x, dat(a));
         return a;
     }
     err(psh, "Can't psh x = $1 onto a = $2", x, a);
@@ -1570,7 +1576,7 @@
         psh(x, a);
         return a;
       case "arr":
-        $.ush(x, dat(a));
+        $.ushf(x, dat(a));
         return a;
     }
     err(ush, "Can't ush x = $1 onto a = $2", x, a);
@@ -1736,7 +1742,7 @@
   function div(){
     var a = arguments;
     if (a.length == 0)return nu("1");
-    if (a.length == 1)return nu(R.div("1", dat(a[0])));
+    if (a.length == 1)return nu(R.div(R.one(), dat(a[0])));
     return foldnum(R.div, a);
   }
   
