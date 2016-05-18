@@ -1097,6 +1097,10 @@ QUnit.test('Object', function (assert){
   assert.testdef(L.owith);*/
 });
 
+QUnit.test('Time', function (assert){
+  assert.same(L.typ(L.currtim()), "num");
+});
+
 QUnit.test('Checkers', function (assert){
   //// Checkers ////
   

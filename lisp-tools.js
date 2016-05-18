@@ -1829,7 +1829,7 @@
   ////// Time //////
   
   function currtim(){
-    return lnum($.tim());
+    return lnum($.currtim());
   }
   
   ////// Checkers //////
