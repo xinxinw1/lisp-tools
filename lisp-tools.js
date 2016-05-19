@@ -509,6 +509,16 @@
     return alr(apl(jn(stf), ar(arguments)));
   }
   
+  function logobj(a){
+    console.log(a);
+    return nil();
+  }
+  
+  function log(){
+    console.log(dat(apl(jn(stf), ar(arguments))));
+    return nil();
+  }
+  
   ////// Converters //////
   
   function sym(a){
@@ -1979,6 +1989,8 @@
     pr: pr,
     prn: prn,
     al: al,
+    logobj: logobj,
+    log: log,
     
     sym: sym,
     str: str,
