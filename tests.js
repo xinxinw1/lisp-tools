@@ -216,50 +216,61 @@ QUnit.test('Comparison', function (assert){
   }), 1);
 });
 
-QUnit.test('Display', function (assert){
-  //// Display ////
-  
-  assert.same(L.dsj(L.nu("2353")), "2353");
-  assert.same(L.dsj(L.sy("test")), "test");
-  //assert.same(L.dsj(L.sy("te st")), "|te st|");
-  assert.same(L.dsj(L.st("test")), "\"test\"");
-  assert.same(L.dsj(L.st("tes\\\"t")), "\"tes\\\\\\\"t\"");
-  assert.same(L.dsj(L.lis(L.nu("1"), L.nu("2"), L.nu("3"))), "(1 2 3)");
-  assert.same(L.dsj(L.cons(L.nu("1"), L.nu("2"))), "(1 . 2)");
-  assert.same(L.dsj(L.lisd(L.nu("1"), L.nu("2"), L.nu("3"))), "(1 2 . 3)");
-  assert.same(L.dsj(L.lis(L.sy("qt"), L.sy("test"))), "'test");
-  assert.same(L.dsj(L.lis(L.sy("uqs"), L.sy("test"))), ",@test");
-  assert.same(L.dsj(L.ar([L.nu("1"), L.nu("2"), L.nu("3")])), "#[1 2 3]");
-  assert.same(L.dsj(L.ob({a: L.nu("1"), b: L.nu("2")})), "{a 1 b 2}");
-  assert.same(L.dsj(L.rx(/test\//g)), "#\"test\\\/\"");
-  assert.same(L.dsj(L.rx(/test"\//g)), "#\"test\\\"\\\/\"");
-  assert.same(L.dsj(L.jn(L.atmp)), "<jn atmp(a)>");
-  assert.same(L.dsj(L.mkdat("test", L.nu("2"))), "<test {data 2}>");
-  assert.same(L.dsj("test"), "<js \"test\">");
-  
-  // test dsj fn types
-  
-  assert.same(L.typ(L.dsp(L.lis(L.nu("1"), L.nu("2"), L.nu("3")))), "str");
-  assert.same(L.dat(L.dsp(L.lis(L.nu("1"), L.nu("2"), L.nu("3")))), "(1 2 3)");
-  
-  //// Output ////
-  
-  var d = 0;
-  L.ofn(function (a){d = a;});
-  L.ou("test");
-  assert.same(d, "test");
-  
-  var d = 0;
-  L.ofn(function (a){d = a;});
-  L.out(L.st("test"));
-  assert.same(L.typ(d), "str");
-  assert.same(L.dat(d), "test\n");
-  
-  var d = 0;
-  L.ofn(function (a){d = a;});
-  L.pr(L.st("test $1 $2 $3"), L.nu("23"), L.st("43"), L.nil());
-  assert.same(L.typ(d), "str");
-  assert.same(L.dat(d), "test 23 \"43\" nil");
+var origOfn;
+
+QUnit.module('ofn', {
+  beforeEach: function() {
+    origOfn = L.gofn();
+  },
+  afterEach: function() {
+    L.ofn(origOfn);
+  }
+}, function (){
+  QUnit.test('Display', function (assert){
+    //// Display ////
+    
+    assert.same(L.dsj(L.nu("2353")), "2353");
+    assert.same(L.dsj(L.sy("test")), "test");
+    //assert.same(L.dsj(L.sy("te st")), "|te st|");
+    assert.same(L.dsj(L.st("test")), "\"test\"");
+    assert.same(L.dsj(L.st("tes\\\"t")), "\"tes\\\\\\\"t\"");
+    assert.same(L.dsj(L.lis(L.nu("1"), L.nu("2"), L.nu("3"))), "(1 2 3)");
+    assert.same(L.dsj(L.cons(L.nu("1"), L.nu("2"))), "(1 . 2)");
+    assert.same(L.dsj(L.lisd(L.nu("1"), L.nu("2"), L.nu("3"))), "(1 2 . 3)");
+    assert.same(L.dsj(L.lis(L.sy("qt"), L.sy("test"))), "'test");
+    assert.same(L.dsj(L.lis(L.sy("uqs"), L.sy("test"))), ",@test");
+    assert.same(L.dsj(L.ar([L.nu("1"), L.nu("2"), L.nu("3")])), "#[1 2 3]");
+    assert.same(L.dsj(L.ob({a: L.nu("1"), b: L.nu("2")})), "{a 1 b 2}");
+    assert.same(L.dsj(L.rx(/test\//g)), "#\"test\\\/\"");
+    assert.same(L.dsj(L.rx(/test"\//g)), "#\"test\\\"\\\/\"");
+    assert.same(L.dsj(L.jn(L.atmp)), "<jn atmp(a)>");
+    assert.same(L.dsj(L.mkdat("test", L.nu("2"))), "<test {data 2}>");
+    assert.same(L.dsj("test"), "<js \"test\">");
+    
+    // test dsj fn types
+    
+    assert.same(L.typ(L.dsp(L.lis(L.nu("1"), L.nu("2"), L.nu("3")))), "str");
+    assert.same(L.dat(L.dsp(L.lis(L.nu("1"), L.nu("2"), L.nu("3")))), "(1 2 3)");
+    
+    //// Output ////
+    
+    var d = 0;
+    L.ofn(function (a){d = a;});
+    L.ou("test");
+    assert.same(d, "test");
+    
+    var d = 0;
+    L.ofn(function (a){d = a;});
+    L.out(L.st("test"));
+    assert.same(L.typ(d), "str");
+    assert.same(L.dat(d), "test\n");
+    
+    var d = 0;
+    L.ofn(function (a){d = a;});
+    L.pr(L.st("test $1 $2 $3"), L.nu("23"), L.st("43"), L.nil());
+    assert.same(L.typ(d), "str");
+    assert.same(L.dat(d), "test 23 \"43\" nil");
+  });
 });
 
 QUnit.test('Converters', function (assert){
