@@ -7,189 +7,82 @@
 (function (udf){
   var nodep = $.nodep;
   
+  var udfp = $.udfp;
+  
+  var typ = $.typ;
+  var tag = $.tag;
+  var rep = $.rep;
+  var det = $.det;
+  var dat = $.dat;
+  var sdat = $.sdat;
+  
+  var mk = $.mk;
+  var mkdat = $.mkdat;
+  var mkbui = $.mkbui;
+  
+  var isa = $.isa;
+  var isany = $.isany;
+  var typin = $.typin;
+  var mkpre = $.mkpre;
+  
+  var tagp = $.tagp;
+  
+  var inPrevDsp = $.inPrevDsp;
+  
+  var cons = $.cons;
+  var nil = $.nil;
+  var car = $.car;
+  var cdr = $.cdr;
+  var scar = $.scar;
+  var scdr = $.scdr;
+  
+  var lis = $.lis;
+  var lisd = $.lisd;
+  
+  var caar = $.caar;
+  var cadr = $.cadr;
+  var cdar = $.cdar;
+  var cddr = $.cddr;
+  
+  var nilp = $.nilp;
+  var lisp = $.lisp;
+  var atmp = $.atmp;
+  
+  var sta = $.sta;
+  
   ////// Type //////
-  
-  function typ(a){
-    return a.type;
-  }
-  
-  function tag(a, x, y){
-    return a[x] = y;
-  }
-  
-  // n is probably never going to be greater than js int size
-  function rep(a, x){
-    return a[x];
-  }
-  
-  // detach
-  function det(a, x){
-    var r = a[x];
-    delete a[x];
-    return r;
-  }
-  
-  function dat(a){
-    return a.data;
-  }
-  
-  function sdat(a, x){
-    return a.data = x;
-  }
   
   //// Builders ////
   
-  function mk(t, o){
-    if (udfp(o))return {type: t};
-    return $.app(o, {type: t});
-  }
-  
-  function mkdat(t, d, o){
-    if (udfp(o))return {type: t, data: d};
-    return $.app(o, {type: t, data: d});
-  }
-  
-  function mkbui(t){
-    return function (a){
-      return mkdat(t, a);
-    };
-  }
-  
   var sy = mkbui("sym");
-  var nu = mkbui("num");
   var st = mkbui("str");
   var ar = mkbui("arr");
+  var nu = mkbui("num");
   var ob = mkbui("obj");
   var rx = mkbui("rgx");
   var jn = mkbui("jn");
   var ma = mkbui("mac");
   var sm = mkbui("smac");
   
-  function car(a){
-    return (a.car === udf)?nil():a.car;
-  }
-  
-  function cdr(a){
-    return (a.cdr === udf)?nil():a.cdr;
-  }
-  
-  function gcar(a){
-    return a.car;
-  }
-  
-  function gcdr(a){
-    return a.cdr;
-  }
-  
-  function cons(a, b){
-    return {type: "lis", car: a, cdr: b};
-  }
-  
-  function nil(){
-    return {type: "nil"};
-  }
-  
-  function scar(a, x){
-    return a.car = x;
-  }
-  
-  function scdr(a, x){
-    return a.cdr = x;
-  }
-  
-  function lis(){
-    var a = arguments;
-    var r = nil();
-    for (var i = a.length-1; i >= 0; i--){
-      r = cons(a[i], r);
-    }
-    return r;
-  }
-  
-  // can't use fold because it's backwards
-  /*function lis2(){
-    return $.foldr(cons, [], arguments);
-  }*/
-  
-  function lisd(){
-    var a = arguments;
-    if (a.length === 0)return nil();
-    var r = a[a.length-1];
-    for (var i = a.length-2; i >= 0; i--){
-      r = cons(a[i], r);
-    }
-    return r;
-  }
-  
-  // can't use foldr because default for lisd() is [] instead of nil()
-  /*function lisd(){
-    return $.foldr(cons, arguments);
-  }*/
+  var sym = sy;
+  var str = st;
   
   function arr(){
     return ar($.cpy(arguments));
   }
   
-  //// cxr ////
-  
-  function caar(a){
-    return car(car(a));
+  function num(a){
+    return nu(R.mknum(a));
   }
   
-  function cadr(a){
-    return car(cdr(a));
-  }
-  
-  function cdar(a){
-    return cdr(car(a));
-  }
-  
-  function cddr(a){
-    return cdr(cdr(a));
-  }
+  var obj = ob;
+  var rgx = rx;
   
   //// Predicates ////
   
-  function isa(t, a){
-    return a.type === t;
-  }
-  
-  function isany(t){
-    var a = arguments;
-    for (var i = 1; i < a.length; i++){
-      if (isa(t, a[i]))return true;
-    }
-    return false;
-  }
-  
-  function typin(a){
-    var tp = typ(a);
-    var t = arguments;
-    for (var i = 1; i < t.length; i++){
-      if (tp === t[i])return true;
-    }
-    return false;
-  }
-  
-  // return isa(t, a);
-  function mkpre(t){
-    return function (a){
-      return a.type === t;
-    };
-  }
-  
-  var udfp = $.udfp;
-  
-  // !!a to deal with null and undefined inputs
-  function tagp(a){
-    return !!a && a.type !== udf;
-  }
-  
-  var nilp = mkpre("nil");
   var symp = mkpre("sym");
   var nump = mkpre("num");
   var strp = mkpre("str");
-  var lisp = mkpre("lis");
   var arrp = mkpre("arr");
   var objp = mkpre("obj");
   var rgxp = mkpre("rgx");
@@ -209,60 +102,12 @@
   (mkpres sym num cons arr obj rgx jn mac smac)
   */
   
-  /*function symp(a){
-    return a.type === "sym";
-  }
-  
-  function nump(a){
-    return a.type === "num";
-  }
-  
-  function strp(a){
-    return a.type === "str";
-  }
-  
-  function lisp(a){
-    return a.type === "lis";
-  }
-  
-  function arrp(a){
-    return a.type === "arr";
-  }
-  
-  function objp(a){
-    return a.type === "obj";
-  }
-  
-  function rgxp(a){
-    return a.type === "rgx";
-  }
-  
-  function jnp(a){
-    return a.type === "jn";
-  }
-  
-  function macp(a){
-    return a.type === "mac";
-  }
-  
-  function smacp(a){
-    return a.type === "smac";
-  }*/
-  
-  /*function nilp(a){
-    return symp(a) && dat(a) === "nil";
-  }*/
-  
   function listp(a){
     return lisp(a) || nilp(a);
   }
   
-  function atmp(a){
-    return !lisp(a);
-  }
-  
   function synp(a){
-    return typin(a, "sym", "num", "str");
+    return typin(a, "sym", "str");
   }
   
   function fnp(a){
@@ -283,7 +128,7 @@
     if (typ(a) !== typ(b))return false;
     switch (typ(a)){
       case "nil": return true; // typ(a) already === typ(b)
-      case "num":
+      case "num": return R.is(dat(a), dat(b));
       case "sym":
       case "str": return dat(a) === dat(b);
       case "rgx": return $.iso(dat(a), dat(b));
@@ -341,17 +186,6 @@
     return false;
   }
   
-  ////// Dynamic vars //////
-  
-  function sta(a, x, f){
-    psh(x, a);
-    try {
-      return f();
-    } finally {
-      pop(a);
-    }
-  }
-  
   ////// Display //////
   
   /*
@@ -365,26 +199,27 @@
   */
   
   function dsp(a){
-    return st(dsj(a));
+    return str(dsj(a));
   }
   
-  var dsps = nil();
-  function dsj(a){
-    return sta(dsps, a, function (){
-      return dsj2(a);
+  function dsj(a, dsjFn, dsjSta){
+    if (udfp(dsjFn))dsjFn = dsj;
+    if (udfp(dsjSta))dsjSta = nil();
+    return sta(dsjSta, a, function (){
+      return dsj1(a, dsjFn, dsjSta);
     });
   }
   
-  function dsj2(a){
+  function dsj1(a, dsj, dsjSta){
     if (!tagp(a))return $.stf("<js $1>", a);
     switch (typ(a)){
       case "nil": return "nil";
-      case "num": 
-      case "sym": return dsym(a);
+      case "num": return R.tostr(dat(a));
+      case "sym": return dsjSym(a);
       case "str": return $.dsp(dat(a));
-      case "lis": return dlis(a);
-      case "arr": return darr(a);
-      case "obj": return dobj(a);
+      case "lis": return dsjLis(a, dsj, dsjSta);
+      case "arr": return dsjArr(a, dsj, dsjSta);
+      case "obj": return dsjObj(a, dsj, dsjSta);
       case "rgx": return "#\"" + $.rpl("\"", "\\\"", dat(a).source) + "\"";
       case "jn": return "<jn " + $.dsp(dat(a)) + ">";
       case "jn2": return "<jn2 " + dsj(rep(a, "ag")) + " "
@@ -394,57 +229,57 @@
       case "smac": return dsmac(a);
       case "spec": return "<spec " + dat(a) + ">";
     }
-    var o = cpy(a);
-    det(o, "type");
-    return "<" + typ(a) + " " + dobj(ob(o)) + ">";
+    return dsjOther(a, dsj, dsjSta);
   }
   
-  function dsym(a){
+  var dsjfns = {};
+  function setDsjFn(t, f){
+    dsjfns[t] = f;
+  }
+  
+  function dsjOther(a, dsj, dsjSta){
+    var f = dsjfns[typ(a)];
+    if (udfp(f)){
+      var o = cpy(a);
+      det(o, "type");
+      return "<" + typ(a) + " " + dsjObj(obj(o), dsj, dsjSta) + ">";
+    }
+    return f(a, dsj, dsjSta);
+  }
+  
+  function dsjSym(a){
     var fr = ["\\", "\n", "\r", "\t", "\b", "\f"];
     var to = ["\\\\", "\\n", "\\r", "\\t", "\\b", "\\f"];
-    return $.rpl(fr, to, dat(a));
+    var r = $.rpl(fr, to, dat(a));
+    return $.has(" ", r)?"|" + r + "|":r;
   }
   
   var dlists = nil();
   var i = -1;
-  function dlis(a){
-    if (has(a, cdr(dsps))){
-      $.al(dsps);
-      return "(...)";
-    }
-    if (is(car(a), sy("qt")))return "'" + dsj(cadr(a));
-    if (is(car(a), sy("qq")))return "`" + dsj(cadr(a));
-    if (is(car(a), sy("uq")))return "," + dsj(cadr(a));
-    if (is(car(a), sy("uqs")))return ",@" + dsj(cadr(a));
-    if (is(car(a), sy("qgs")))return "#" + dsj(cadr(a));
-    if (is(car(a), sy("splice")))return "@" + dsj(cadr(a));
-    if (is(car(a), sy("fn1")))return "(fn (_) " + dsj(cadr(a)) + ")";
-    return "(" + sta(dlists, a, function (){
-      return dlis2(a);
-    }) + ")";
+  function dsjLis(a, dsj, dsjSta){
+    if (is(car(a), sy("qt")))return "'" + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("qq")))return "`" + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("uq")))return "," + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("uqs")))return ",@" + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("qgs")))return "#" + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("splice")))return "@" + dsj(cadr(a), dsj, dsjSta);
+    if (is(car(a), sy("fn1")))return "(fn (_) " + dsj(cadr(a), dsj, dsjSta) + ")";
+    return $.dspLis(a, dsj, dsjSta);
   }
   
-  // dlis2( '(1 2 3 4 . 5) ) -> "1 2 3 4 . 5"
-  function dlis2(a){
-    if (nilp(cdr(a)))return dsj(car(a));
-    if (atmp(cdr(a)))return dsj(car(a)) + " . " + dsj(cdr(a));
-    if (has(a, cdr(dlists)))return dsj(car(a)) + " . (...)";
-    return dsj(car(a)) + " " + dlis2(cdr(a));
-  }
-  
-  function dobj(a){
-    if (has(a, cdr(dsps)))return "{...}";
+  function dsjObj(a, dsj, dsjSta){
+    if (inPrevDsp(a, dsjSta))return "{...}";
     return "{" + $.foldi(function (s, x, i){
-      if (s == "")return i + " " + dsj(x);
-      return s + " " + i + " " + dsj(x);
+      if (s == "")return i + " " + dsj(x, dsj, dsjSta);
+      return s + " " + i + " " + dsj(x, dsj, dsjSta);
     }, "", dat(a)) + "}";
   }
   
-  function darr(a){
-    if (has(a, cdr(dsps)))return "#[...]";
+  function dsjArr(a, dsj, dsjSta){
+    if (inPrevDsp(a, dsjSta))return "#[...]";
     return "#[" + $.fold(function (s, x){
-      if (s == "")return dsj(x);
-      return s + " " + dsj(x);
+      if (s == "")return dsj(x, dsj, dsjSta);
+      return s + " " + dsj(x, dsj, dsjSta);
     }, "", dat(a)) + "]";
   }
   
@@ -468,14 +303,14 @@
   
   ////// Output //////
   
-  var of = function (a){return nil();}
-  
-  function ofn(f){
-    return of = f;
-  }
+  var of = function (a){return nil();};
   
   function gofn(){
     return of;
+  }
+  
+  function sofn(f){
+    return of = f;
   }
   
   function ou(a){
@@ -483,7 +318,26 @@
   }
   
   function out(a){
-    return of(app(a, st("\n")));
+    return of(app(a, str("\n")));
+  }
+  
+  function wout(ofn, f){
+    var old = gofn();
+    sofn(ofn);
+    try {
+      return f();
+    } finally {
+      sofn(old);
+    }
+  }
+  
+  function outstr(f){
+    var old = gofn();
+    var s = str("");
+    wout(function (a){
+      s = app(s, a);
+    }, f);
+    return s;
   }
   
   function alr(a){
@@ -505,39 +359,37 @@
   
   ////// Converters //////
   
-  function sym(a){
+  function tsym(a){
     switch (typ(a)){
-      case "nil": return sy("");
+      case "nil": return sym("");
       case "sym": return a;
-      case "num":
-      case "str": return sy(dat(a));
+      case "str": return sym(dat(a));
     }
-    return sy(dsj(a));
+    return sym(dsj(a));
   }
   
-  function str(){
+  function tstr(){
     return joi(ar(arguments));
   }
   
-  function str1(a){
+  function tstr1(a){
     switch (typ(a)){
-      case "nil": return st("");
+      case "nil": return str("");
       case "str": return a;
-      case "sym": 
-      case "num": return st(dat(a));
+      case "sym": return str(dat(a));
     }
     return dsp(a);
   }
   
-  function num(a){
+  function tnum(a){
     switch (typ(a)){
       case "num": return a;
       case "str":
       case "sym": 
-        var s = $.mat(/^-?[0-9]+(\.[0-9]+)?/, dat(a));
-        return (s === -1)?nu("0"):nu(s);
+        var n = R.real(dat(a));
+        return $.falp(n)?num("0"):nu(n);
     }
-    return nu("0");
+    return num("0");
   }
   
   // input: a lisp object
@@ -553,7 +405,7 @@
     });
   }
   
-  function tarr(a){
+  /*function tarr(a){
     var t = typ(a);
     switch (t){
       case "arr": return a;
@@ -579,7 +431,7 @@
       }, nil(), a);
     }
     err(tlis, "Can't coerce a = $1 to lis", a);
-  }
+  }*/
   
   /*function tobj(a, o){
     if (udfp(o))o = {};
@@ -598,7 +450,7 @@
     err(tobj, "Can't coerce a = $1 to obj", a);
   }*/
   
-  function tobj(a){
+  /*function tobj(a){
     var t = typ(a);
     switch (t){
       case "obj": return a;
@@ -622,7 +474,7 @@
   function prop(a){
     if (synp(a))return dat(a);
     err(prop, "Invalid obj prop name a = $1", a);
-  }
+  }*/
   
   function jstr(a){
     if (synp(a))return dat(a);
@@ -657,13 +509,13 @@
   // input: lisp obj
   // output: js num
   function jnum(a){
-    return $.num(dat(num(a)));
+    return R.tonum(dat(tnum(a)));
   }
   
   // input: js obj
   // output: lisp num
   function lnum(a){
-    return num(st($.str(a)));
+    return tnum(st($.str(a)));
   }
   
   function jmat(a){
@@ -1196,8 +1048,8 @@
       case "nil":
       case "lis":
       case "arr": return fold(jn(function (r, i){
-        if (is(r, st("")))return str1(i);
-        return app(r, x, str1(i));
+        if (is(r, st("")))return tstr1(i);
+        return app(r, x, tstr1(i));
       }), st(""), a);
     }
     err(joi, "Can't join a = $1 with x = $2", a, x);
@@ -1245,7 +1097,7 @@
         if (nilp(b))return a;
         return tail(a, b);
       case "sym": return sy($.app(dat(a), dat(sym(b))));
-      case "str": return st($.app(dat(a), dat(str1(b))));
+      case "str": return st($.app(dat(a), dat(tstr1(b))));
       case "num": return nu($.app(dat(a), dat(num(b))));
       case "obj": return ob($.app(dat(a), dat(tobj(b))));
       case "arr": 
@@ -1915,15 +1767,19 @@
     
     car: car,
     cdr: cdr,
-    gcar: gcar,
-    gcdr: gcdr,
     cons: cons,
     nil: nil,
     scar: scar,
     scdr: scdr,
     lis: lis,
     lisd: lisd,
+    
+    sym: sym,
+    num: num,
+    str: str,
     arr: arr,
+    obj: obj,
+    rgx: rgx,
     
     caar: caar,
     cadr: cadr,
@@ -1966,23 +1822,25 @@
     dsp: dsp,
     dsj: dsj,
     
-    ofn: ofn,
     gofn: gofn,
+    sofn: sofn,
     ou: ou,
     out: out,
+    wout: wout,
+    outstr: outstr,
     pr: pr,
     prn: prn,
     al: al,
     
-    sym: sym,
-    str: str,
-    str1: str1,
-    num: num,
+    tsym: tsym,
+    tstr: tstr,
+    tstr1: tstr1,
+    tnum: tnum,
     tfn: tfn,
-    tarr: tarr,
-    tlis: tlis,
-    tobj: tobj,
-    prop: prop,
+    //tarr: tarr,
+    //tlis: tlis,
+    //tobj: tobj,
+    //prop: prop,
     jstr: jstr,
     jarr: jarr,
     jnum: jnum,
